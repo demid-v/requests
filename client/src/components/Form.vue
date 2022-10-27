@@ -1,27 +1,100 @@
 <script setup lang="ts">
-function showJson(e: Event) {
-  const data = new FormData(e.currentTarget as HTMLFormElement);
-  console.log(Array.from(data.entries()));
-  console.log(data);
+import type { Field, Fields, OptionsField, TextField } from "@/types";
+import { reactive, watchEffect } from "vue";
 
-  fetch("http://localhost:5501/form-config", {
-    method: "POST",
-    body: data,
-  })
-    .then(async (res) => {
-      const d = await res.json();
-      console.log(d);
-    })
-    .catch((e) => console.error(e));
+type Order = { _id: string; title: string; description: string; date: string };
+
+const { order } = defineProps<{ order?: Order }>();
+
+const formConfig: Fields = reactive(new Map());
+
+const getRandomUUIDForElement = () => crypto.randomUUID();
+
+function transformObjectToMap(obj: any[], map: Map<string, Order | Field>) {
+  obj.forEach((item) => {
+    if (item.type === "checkbox" || item.type === "select") {
+      const options = new Map();
+
+      item.options.forEach((option: any) =>
+        options.set(getRandomUUIDForElement(), option)
+      );
+
+      item.options = options;
+    }
+
+    map.set(item._id, item);
+  });
+
+  console.log(map);
 }
+
+function getFormConfig() {
+  fetch("http://localhost:5501/form-config", {
+    method: "GET",
+  }).then(async (resp) => {
+    const data = await resp.json();
+    console.log("form-config:", data);
+
+    transformObjectToMap(data, formConfig);
+  });
+}
+
+watchEffect(getFormConfig);
 </script>
 
 <template>
-  <form @submit.prevent="showJson">
+  <form @submit.prevent="">
     <fieldset>
       <legend>Order's information</legend>
 
-      <label for="name">Name</label><br />
+      <template v-for="[id, field] in formConfig">
+        <label :for="id">{{ field.name }}</label
+        ><br />
+
+        <input
+          v-if="field.type === 'text' || field.type === 'datetime-local'"
+          :type="field.type"
+          :id="id"
+          :value="(field as TextField).default"
+          :required="<true | undefined>field.isRequired"
+        />
+
+        <textarea
+          v-else-if="field.type === 'multiline'"
+          :type="field.type"
+          :id="id"
+          :value="(field as TextField).default"
+          :required="<true | undefined>field.isRequired"
+          >{{ (field as TextField).default }}</textarea
+        >
+
+        <template
+          v-else-if="field.type === 'checkbox'"
+          v-for="([id, option], index) in (field as OptionsField).options"
+        >
+          <label>{{ option.name }}</label>
+          <input
+            :type="field.type"
+            :id="id"
+            :value="option.name"
+            :checked="option.isDefault"
+          /><br v-if="index !== (field as OptionsField).options!.size - 1" />
+        </template>
+
+        <select v-else-if="field.type === 'select'" :id="id">
+          <option
+            v-for="[id, option] in ((field as OptionsField).options)"
+            :key="id"
+            :id="id"
+            :value="option.name"
+            :selected="<true | undefined>option.isDefault"
+          >
+            {{ option.name }}
+          </option></select
+        ><br />
+      </template>
+
+      <!-- <label for="name">Name</label><br />
       <input type="text" id="name" name="name" value="Order 1" required /><br />
 
       <label for="description">Description</label><br />
@@ -38,7 +111,7 @@ Lorem ipsum dolor sit amet consectetur adipisicing elit. Deleniti, quae.</textar
         <option value="1">1</option>
         <option value="2" selected>2</option>
         <option value="3">3</option></select
-      ><br />
+      ><br /> -->
 
       <input type="submit" value="Confirm" />
     </fieldset>

@@ -1,6 +1,7 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
-import { startDb, selectAllOrders } from "./database";
+import OrdersDb from "./database";
+import setRoutes from "./routes/routesConfig";
 
 dotenv.config();
 
@@ -27,21 +28,13 @@ app.use(
 );
 
 const port = process.env.PORT;
-let collectionOrder: any;
 
-app.get("/orders", async (_req: Request, res: Response) => {
-  const data = await selectAllOrders(collectionOrder);
+const ordersDb: OrdersDb = new OrdersDb();
 
-  res.send(data);
-});
+ordersDb.startDb().then(() => {
+  setRoutes(app, ordersDb);
 
-app.post("/form-config", async (req: Request, res: Response) => {
-  console.log(req.body);
-
-  res.send(req.body);
-});
-
-app.listen(port, async () => {
-  collectionOrder = await startDb();
-  console.log(`⚡️[server]: Server is running at https://localhost:${port}`);
+  app.listen(port, () => {
+    console.log(`Server is running at https://localhost:${port}`);
+  });
 });

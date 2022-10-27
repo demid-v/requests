@@ -1,6 +1,11 @@
 import type { InputHTMLAttributes, VNodeRef } from "vue";
 
-type FieldType = "text" | "multiline" | "checkbox" | "select" | "datetime";
+type FieldType =
+  | "text"
+  | "multiline"
+  | "checkbox"
+  | "select"
+  | "datetime-local";
 
 type GenericField = {
   type: FieldType;

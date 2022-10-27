@@ -1,12 +1,28 @@
 <script setup lang="ts">
-import { reactive, watch } from "vue";
+import {
+  reactive,
+  ref,
+  watch,
+  watchEffect,
+  type Ref,
+  type VNodeRef,
+} from "vue";
 import type { Fields, FieldType, TextField, OptionsField } from "../types";
 
 const fields: Fields = reactive(new Map());
 
-function getRandomUUIDForElement() {
-  return crypto.randomUUID();
+function getFormConfig() {
+  fetch("http://localhost:5501/form-config", {
+    method: "GET",
+  }).then(async (resp) => {
+    const ordersResp = await resp.json();
+    console.log("form-config:", ordersResp);
+  });
 }
+
+watchEffect(getFormConfig);
+
+const getRandomUUIDForElement = () => crypto.randomUUID();
 
 function onTypeSelectChange(event: Event) {
   const target = event.target as HTMLSelectElement;
@@ -54,16 +70,22 @@ function onDefaultOptionSet(options: OptionsField["options"], uuid: string) {
   }
 }
 
-function onFormSubmit(event: Event) {
-  validate();
+function onFormSubmit() {
+  if (!isValid()) {
+    return false;
+  }
 
   const fieldsPrepared = prepareObject();
+
+  // const formData = new FormData(event.target as HTMLFormElement | undefined);
+  // const fieldsPrepared = Array.from(formData.entries());
+
   console.log(fieldsPrepared);
 
   sendObject(fieldsPrepared);
 }
 
-function validate() {
+function isValid() {
   fields.forEach((field) => {
     console.log(field);
 
@@ -75,8 +97,11 @@ function validate() {
         (field as OptionsField).options?.size === 0)
     ) {
       (field as OptionsField).invalid = true;
+      return false;
     }
   });
+
+  return true;
 }
 
 function prepareObject() {
@@ -101,7 +126,7 @@ function prepareObject() {
         optionPrepared.name = option.name;
 
         if (option.isDefault === true || option.isDefault === "true") {
-          optionPrepared.isDefault = 1;
+          optionPrepared.isDefault = option.isDefault;
         }
 
         fieldPrepared.options.push(optionPrepared);
@@ -117,7 +142,7 @@ function prepareObject() {
     }
 
     if (field.isRequired === true) {
-      fieldPrepared.isRequired = 1;
+      fieldPrepared.isRequired = field.isRequired;
     }
 
     fieldsPrepared.push(fieldPrepared);
@@ -129,6 +154,7 @@ function prepareObject() {
 function sendObject(fieldsPrepared: any) {
   fetch("http://localhost:5501/form-config", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(fieldsPrepared),
   }).then(async (resp) => {
     const ordersResp = await resp.json();
@@ -140,7 +166,7 @@ watch(fields, () => console.log(fields));
 </script>
 
 <template>
-  <form @submit.prevent="onFormSubmit($event)">
+  <form @submit.prevent="onFormSubmit()">
     <fieldset>
       <legend>Form config</legend>
 
@@ -160,7 +186,7 @@ watch(fields, () => console.log(fields));
           <option value="multiline">Multiline</option>
           <option value="checkbox">Checkbox</option>
           <option value="select">Select</option>
-          <option value="datetime">Date and time</option></select
+          <option value="datetime-local">Date and time</option></select
         ><br />
 
         <label :for="id">Field name</label><br />

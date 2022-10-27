@@ -1,23 +1,44 @@
 const mongoose = require("mongoose");
 
-async function startDb() {
-  await mongoose.connect("mongodb://localhost:27017/orders");
+class OrdersDb {
+  private collectionOrder: any;
+  private collectionFormStructure: any;
 
-  const collectionOrder = mongoose.model(
-    "Orders",
-    new mongoose.Schema(),
-    "order"
-  );
+  async startDb() {
+    await mongoose.connect("mongodb://localhost:27017/orders");
 
-  return collectionOrder;
+    this.collectionOrder = mongoose.model(
+      "Orders",
+      new mongoose.Schema({}, { strict: false }),
+      "order"
+    );
+
+    this.collectionFormStructure = mongoose.model(
+      "FormStructure",
+      new mongoose.Schema({}, { strict: false }),
+      "form_structure"
+    );
+  }
+
+  async selectAllOrders() {
+    const data = await this.collectionOrder.find({});
+
+    return data;
+  }
+
+  async selectFormStructure() {
+    const data = await this.collectionFormStructure.find({});
+
+    return data;
+  }
+
+  async insertFormStructure(obj: any) {
+    await this.collectionFormStructure.deleteMany({});
+
+    const data = await this.collectionFormStructure.create(obj);
+
+    return data;
+  }
 }
 
-async function selectAllOrders(collectionOrder: any) {
-  const data = await collectionOrder.find({});
-
-  return data;
-}
-
-const db = { startDb, selectAllOrders };
-
-export = db;
+export default OrdersDb;
