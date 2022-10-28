@@ -1,4 +1,4 @@
-import type { InputHTMLAttributes, VNodeRef } from "vue";
+import type { InputHTMLAttributes } from "vue";
 
 type FieldType =
   | "text"
@@ -8,6 +8,7 @@ type FieldType =
   | "datetime-local";
 
 type GenericField = {
+  _id?: string;
   type: FieldType;
   name: string;
   description?: string;
@@ -18,14 +19,13 @@ type TextField = GenericField & {
   default?: string;
 };
 
+type Option = {
+  name?: string;
+  isDefault?: InputHTMLAttributes["checked"];
+};
+
 type OptionsField = GenericField & {
-  options?: Map<
-    string,
-    {
-      name?: string;
-      isDefault?: InputHTMLAttributes["checked"];
-    }
-  >;
+  options?: Map<string, Option>;
   invalid?: true;
 };
 
@@ -38,6 +38,7 @@ type Fields = Map<string, Field>;
 export type {
   FieldType,
   TextField,
+  Option,
   OptionsField,
   DatatimeField,
   Field,

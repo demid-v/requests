@@ -39,6 +39,12 @@ class OrdersDb {
 
     return data;
   }
+
+  async patchOrder(obj: any) {
+    const data = await this.collectionOrder.create({ fields: obj });
+
+    return data;
+  }
 }
 
 export default OrdersDb;

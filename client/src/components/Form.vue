@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import type { Field, Fields, OptionsField, TextField } from "@/types";
-import { reactive, watchEffect } from "vue";
+import type { Field, Option, OptionsField, TextField } from "@/types";
+import { reactive, watch, watchEffect } from "vue";
 
 type Order = { _id: string; title: string; description: string; date: string };
 
-const { order } = defineProps<{ order?: Order }>();
+const { order } = defineProps<{ order?: { _id: string; fields: Field[] } }>();
 
-const formConfig: Fields = reactive(new Map());
+type FormFields = Map<string, Field & { value?: string }>;
+
+const formConfig: FormFields = reactive(new Map());
 
 const getRandomUUIDForElement = () => crypto.randomUUID();
 
@@ -24,8 +26,6 @@ function transformObjectToMap(obj: any[], map: Map<string, Order | Field>) {
 
     map.set(item._id, item);
   });
-
-  console.log(map);
 }
 
 function getFormConfig() {
@@ -40,10 +40,94 @@ function getFormConfig() {
 }
 
 watchEffect(getFormConfig);
+
+function onCheckBoxClick(event: Event, option: Option) {
+  if (!(event.target as HTMLInputElement).checked) {
+    delete option.isDefault;
+  } else {
+    option.isDefault = true;
+  }
+}
+
+function sendObject(fieldsPrepared: any) {
+  fetch("http://localhost:5501/order", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(fieldsPrepared),
+  }).then(async (resp) => {
+    const ordersResp = await resp.json();
+    console.log("Order:", ordersResp);
+  });
+}
+
+function prepareObject() {
+  const fieldsPrepared: any = [];
+
+  formConfig.forEach((field) => {
+    const fieldPrepared: any = {};
+
+    fieldPrepared.type = field.type;
+    fieldPrepared.name = field.name;
+
+    if (field.description?.trim() !== "") {
+      fieldPrepared.description = field.description;
+    }
+
+    if (field.type === "checkbox" || field.type === "select") {
+      fieldPrepared.options = [];
+
+      (field as OptionsField).options?.forEach((option) => {
+        const optionPrepared: any = {};
+
+        optionPrepared.name = option.name;
+
+        if (option.isDefault === true || option.isDefault === "true") {
+          optionPrepared.isDefault = option.isDefault;
+        }
+
+        fieldPrepared.options.push(optionPrepared);
+      });
+    }
+
+    if (
+      field.type === "text" ||
+      field.type === "multiline" ||
+      field.type === "datetime-local"
+    ) {
+      const defaultTrimmed = (field as TextField).default?.trim();
+
+      if (defaultTrimmed !== "") {
+        fieldPrepared.default = defaultTrimmed;
+      }
+    }
+
+    if (field.isRequired === true) {
+      fieldPrepared.isRequired = field.isRequired;
+    }
+
+    fieldsPrepared.push(fieldPrepared);
+  });
+
+  return fieldsPrepared;
+}
+
+function onFormSubmit() {
+  // if (!isValid()) {
+  //   return false;
+  // }
+
+  const fieldsPrepared = prepareObject();
+
+  console.log(fieldsPrepared);
+
+  sendObject(fieldsPrepared);
+}
+
+watch(formConfig, () => console.log(formConfig));
 </script>
 
 <template>
-  <form @submit.prevent="">
+  <form @submit.prevent="onFormSubmit()">
     <fieldset>
       <legend>Order's information</legend>
 
@@ -55,7 +139,7 @@ watchEffect(getFormConfig);
           v-if="field.type === 'text' || field.type === 'datetime-local'"
           :type="field.type"
           :id="id"
-          :value="(field as TextField).default"
+          v-model="(field as TextField).default"
           :required="<true | undefined>field.isRequired"
         />
 
@@ -63,7 +147,7 @@ watchEffect(getFormConfig);
           v-else-if="field.type === 'multiline'"
           :type="field.type"
           :id="id"
-          :value="(field as TextField).default"
+          v-model="(field as TextField).default"
           :required="<true | undefined>field.isRequired"
           >{{ (field as TextField).default }}</textarea
         >
@@ -78,6 +162,7 @@ watchEffect(getFormConfig);
             :id="id"
             :value="option.name"
             :checked="option.isDefault"
+            @click="onCheckBoxClick($event, option)"
           /><br v-if="index !== (field as OptionsField).options!.size - 1" />
         </template>
 
@@ -93,25 +178,6 @@ watchEffect(getFormConfig);
           </option></select
         ><br />
       </template>
-
-      <!-- <label for="name">Name</label><br />
-      <input type="text" id="name" name="name" value="Order 1" required /><br />
-
-      <label for="description">Description</label><br />
-      <textarea id="description" name="description" required>
-Lorem ipsum dolor sit amet consectetur adipisicing elit. Deleniti, quae.</textarea
-      ><br />
-
-      <label for="datetime">Order's date</label><br />
-      <input id="datetime" name="datetime" type="datetime-local" required />
-      <br />
-
-      <label for="options">Select an option</label><br />
-      <select id="options" name="options">
-        <option value="1">1</option>
-        <option value="2" selected>2</option>
-        <option value="3">3</option></select
-      ><br /> -->
 
       <input type="submit" value="Confirm" />
     </fieldset>

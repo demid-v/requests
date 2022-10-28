@@ -3,9 +3,9 @@ import OrdersDb from "../database";
 import setFormConfigRoutes from "./formConfig";
 import setOrdersRoutes from "./orders";
 
-function setRoutes(app: Express, orderDb: OrdersDb) {
-  setOrdersRoutes(app, orderDb);
-  setFormConfigRoutes(app, orderDb);
+function setRoutes(app: Express, ordersDb: OrdersDb) {
+  setOrdersRoutes(app, ordersDb);
+  setFormConfigRoutes(app, ordersDb);
 }
 
 export default setRoutes;

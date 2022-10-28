@@ -6,17 +6,32 @@ import type { Field, Fields } from "@/types";
 
 type Order = { _id: string; title: string; description: string; date: string };
 
-const orders: Map<string, Order> = reactive(new Map());
+const orders: Map<string, { _id: string; fields: Field[] }> = reactive(
+  new Map()
+);
 
 const isEditing = ref(false);
 const editingOrderId = ref();
 
-function transformObjectToMap(obj: any[], map: Map<string, Order | Field>) {
+const getRandomUUIDForElement = () => crypto.randomUUID();
+
+function transformObjectToMap(
+  obj: any[],
+  map: Map<string, { _id: string; fields: Field[] }>
+) {
   obj.forEach((item) => {
+    if (item.type === "checkbox" || item.type === "select") {
+      const options = new Map();
+
+      item.options.forEach((option: any) =>
+        options.set(getRandomUUIDForElement(), option)
+      );
+
+      item.options = options;
+    }
+
     map.set(item._id, item);
   });
-
-  console.log(map);
 }
 
 function getOrders() {

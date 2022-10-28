@@ -7,9 +7,31 @@ import {
   type Ref,
   type VNodeRef,
 } from "vue";
-import type { Fields, FieldType, TextField, OptionsField } from "../types";
+import type {
+  Fields,
+  FieldType,
+  TextField,
+  OptionsField,
+  Field,
+} from "../types";
 
-const fields: Fields = reactive(new Map());
+const formConfig: Fields = reactive(new Map());
+
+function transformObjectToMap(obj: any[], map: Map<string, Field>) {
+  obj.forEach((item) => {
+    if (item.type === "checkbox" || item.type === "select") {
+      const options = new Map();
+
+      item.options.forEach((option: any) =>
+        options.set(getRandomUUIDForElement(), option)
+      );
+
+      item.options = options;
+    }
+
+    map.set(item._id, item);
+  });
+}
 
 function getFormConfig() {
   fetch("http://localhost:5501/form-config", {
@@ -17,6 +39,8 @@ function getFormConfig() {
   }).then(async (resp) => {
     const ordersResp = await resp.json();
     console.log("form-config:", ordersResp);
+
+    transformObjectToMap(ordersResp, formConfig);
   });
 }
 
@@ -24,20 +48,29 @@ watchEffect(getFormConfig);
 
 const getRandomUUIDForElement = () => crypto.randomUUID();
 
-function onTypeSelectChange(event: Event) {
-  const target = event.target as HTMLSelectElement;
-  const value = target.value as FieldType;
+function onTypeSelectAddField(event: Event) {
+  const value = (event.target as HTMLSelectElement).value as FieldType;
 
-  fields.set(getRandomUUIDForElement(), {
+  formConfig.set(getRandomUUIDForElement(), {
     type: value,
     name: "",
   });
 
-  target.value = "";
+  (event.target as HTMLSelectElement).value = "";
 }
 
-function deleteField(list: Fields | OptionsField["options"], uuid: string) {
-  list!.delete(uuid);
+function onTypeSelectChange(event: Event, id: string) {
+  const value = (event.target as HTMLSelectElement).value as FieldType;
+
+  formConfig.set(id, {
+    type: value,
+    name: formConfig.get(id)?.name || "",
+    description: formConfig.get(id)?.description || "",
+  });
+}
+
+function deleteField(list: Fields | OptionsField["options"], id: string) {
+  list!.delete(id);
 }
 
 function onNewOptionClick(
@@ -53,19 +86,28 @@ function onNewOptionClick(
   fieldOptions.set(getRandomUUIDForElement(), {});
 }
 
-function onDefaultOptionSet(options: OptionsField["options"], uuid: string) {
+function onOptionSetAsDefault(
+  event: Event,
+  options: OptionsField["options"],
+  inId: string
+) {
   if (options) {
     const prevCheckedOption = Array.from(options.entries()).find(
       ([id, { isDefault }]) =>
-        id !== uuid && (isDefault === true || isDefault === "true")
+        id !== inId && (isDefault === true || isDefault === "true")
     );
 
     if (prevCheckedOption !== undefined) {
-      const prevCheckedOptionObject = options.get(prevCheckedOption[0]);
+      delete options.get(prevCheckedOption[0])!.isDefault;
+    }
 
-      if (prevCheckedOptionObject!.isDefault !== undefined) {
-        delete prevCheckedOptionObject!.isDefault;
-      }
+    const optionValue = (event.target as HTMLInputElement).checked;
+    const option = options.get(inId);
+
+    if (optionValue) {
+      option!.isDefault = true;
+    } else {
+      delete option!.isDefault;
     }
   }
 }
@@ -86,7 +128,7 @@ function onFormSubmit() {
 }
 
 function isValid() {
-  fields.forEach((field) => {
+  formConfig.forEach((field) => {
     console.log(field);
 
     console.log((field as OptionsField).options?.size);
@@ -107,7 +149,7 @@ function isValid() {
 function prepareObject() {
   const fieldsPrepared: any = [];
 
-  fields.forEach((field) => {
+  formConfig.forEach((field) => {
     const fieldPrepared: any = {};
 
     fieldPrepared.type = field.type;
@@ -162,7 +204,7 @@ function sendObject(fieldsPrepared: any) {
   });
 }
 
-watch(fields, () => console.log(fields));
+watch(formConfig, () => console.log(formConfig));
 </script>
 
 <template>
@@ -170,23 +212,35 @@ watch(fields, () => console.log(fields));
     <fieldset>
       <legend>Form config</legend>
 
-      <fieldset v-for="[id, field] in fields" :key="id">
-        <button type="button" @click="deleteField(fields, id)">Delete</button
+      <fieldset v-for="[id, field] in formConfig" :key="id">
+        <button type="button" @click="deleteField(formConfig, id)">
+          Delete</button
         ><br />
 
         <label :for="id">Field type</label><br />
         <select
           :name="'fieldType-' + id"
           :id="id"
-          v-model="field.type"
           required
+          @change="onTypeSelectChange($event, id)"
         >
           <option value="" selected disabled hidden>Choose type</option>
-          <option value="text">Text</option>
-          <option value="multiline">Multiline</option>
-          <option value="checkbox">Checkbox</option>
-          <option value="select">Select</option>
-          <option value="datetime-local">Date and time</option></select
+          <option value="text" :selected="field.type === 'text'">Text</option>
+          <option value="multiline" :selected="field.type === 'multiline'">
+            Multiline
+          </option>
+          <option value="checkbox" :selected="field.type === 'checkbox'">
+            Checkbox
+          </option>
+          <option value="select" :selected="field.type === 'select'">
+            Select
+          </option>
+          <option
+            value="datetime-local"
+            :selected="field.type === 'datetime-local'"
+          >
+            Date and time
+          </option></select
         ><br />
 
         <label :for="id">Field name</label><br />
@@ -235,8 +289,14 @@ watch(fields, () => console.log(fields));
               type="checkbox"
               name="defaultOption"
               title="Set as default"
-              v-model="option.isDefault"
-              @change="onDefaultOptionSet((field as OptionsField).options, id)"
+              :checked="option.isDefault"
+              @change="
+                onOptionSetAsDefault(
+                  $event,
+                  (field as OptionsField).options,
+                  id
+                )
+              "
             />
             <button
               type="button"
@@ -276,7 +336,7 @@ watch(fields, () => console.log(fields));
       <select
         name="fieldType"
         id="newFieldType"
-        @change="onTypeSelectChange($event)"
+        @change="onTypeSelectAddField($event)"
       >
         <option value="" selected disabled hidden>Choose type</option>
         <option value="text">Text</option>

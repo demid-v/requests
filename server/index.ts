@@ -9,6 +9,8 @@ const app: Express = express();
 
 function setHeaders(_req: Request, res: Response, next: NextFunction) {
   res.setHeader("Access-Control-Allow-Origin", "*");
+  // res.setHeader("Access-Control-Allow-Methods", "*");
+
   res.header("Access-Control-Allow-Headers", "Content-Type");
 
   return next();

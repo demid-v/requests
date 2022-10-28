@@ -1,14 +1,22 @@
 <script setup lang="ts">
+import type { Field, Fields, TextField } from "@/types";
+import { watch, watchEffect } from "vue";
+
 type Order = { _id: string; title: string; description: string; date: string };
-defineProps<{ order: Order; switchEditing: Function }>();
+const { order } = defineProps<{
+  order: { _id: string; fields: Field[] };
+  switchEditing: Function;
+}>();
+
+watchEffect(() => console.log(order.fields));
 </script>
 
 <template>
   <div class="order">
     <div>
-      <p>{{ order.title }}</p>
-      <p>{{ order.description }}</p>
-      <p>{{ order.date }}</p>
+      <p>{{ (order.fields[0] as TextField).default }}</p>
+      <p>{{ (order.fields[1] as TextField).default }}</p>
+      <p>{{ new Date((order.fields[2] as TextField).default || "") }}</p>
     </div>
 
     <div><button @click="switchEditing(order._id)">Edit</button></div>
