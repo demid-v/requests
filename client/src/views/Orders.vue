@@ -1,14 +1,16 @@
 <script setup lang="ts">
-import { reactive, ref, watchEffect, type Ref } from "vue";
+import { reactive, ref, watch, watchEffect, type Ref } from "vue";
 import Order from "../components/Order.vue";
 import Form from "../components/Form.vue";
 import type { Field, Fields } from "@/types";
 
 type Order = { _id: string; title: string; description: string; date: string };
 
-const orders: Map<string, { _id: string; fields: Field[] }> = reactive(
+const orders: Map<string, { _id: string; fields: Fields }> = reactive(
   new Map()
 );
+
+watch(orders, () => console.log(orders));
 
 const isEditing = ref(false);
 const editingOrderId = ref();
@@ -17,20 +19,28 @@ const getRandomUUIDForElement = () => crypto.randomUUID();
 
 function transformObjectToMap(
   obj: any[],
-  map: Map<string, { _id: string; fields: Field[] }>
+  map: Map<string, { _id: string; fields: Fields }>
 ) {
-  obj.forEach((item) => {
-    if (item.type === "checkbox" || item.type === "select") {
-      const options = new Map();
+  obj.forEach((order) => {
+    const fields = new Map();
 
-      item.options.forEach((option: any) =>
-        options.set(getRandomUUIDForElement(), option)
-      );
+    order.fields.forEach((item: any) => {
+      if (item.type === "checkbox" || item.type === "select") {
+        const options = new Map();
 
-      item.options = options;
-    }
+        item.options.forEach((option: any) =>
+          options.set(getRandomUUIDForElement(), option)
+        );
 
-    map.set(item._id, item);
+        item.options = options;
+      }
+
+      fields.set(getRandomUUIDForElement(), item);
+    });
+
+    order.fields = fields;
+
+    map.set(order._id, order);
   });
 }
 
@@ -72,6 +82,10 @@ function switchEditing(orderId: string) {
       />
     </div>
 
-    <Form v-show="isEditing" :order="orders.get(editingOrderId)" />
+    <Form
+      v-if="editingOrderId"
+      v-show="isEditing"
+      :order="orders.get(editingOrderId)"
+    />
   </main>
 </template>

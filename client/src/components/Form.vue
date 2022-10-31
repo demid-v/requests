@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Field, Option, OptionsField, TextField } from "@/types";
+import type { Field, Fields, Option, OptionsField, TextField } from "@/types";
 import { reactive, watch, watchEffect } from "vue";
 
 type Order = { _id: string; title: string; description: string; date: string };
 
-const { order } = defineProps<{ order?: { _id: string; fields: Field[] } }>();
+const { order } = defineProps<{ order?: { _id: string; fields: Fields } }>();
 
 type FormFields = Map<string, Field & { value?: string }>;
 
@@ -127,61 +127,123 @@ watch(formConfig, () => console.log(formConfig));
 </script>
 
 <template>
-  <form @submit.prevent="onFormSubmit()">
-    <fieldset>
-      <legend>Order's information</legend>
+  <div>
+    <form @submit.prevent="onFormSubmit()">
+      <fieldset>
+        <legend>Order's information</legend>
 
-      <template v-for="[id, field] in formConfig">
-        <label :for="id">{{ field.name }}</label
-        ><br />
+        <template v-for="[id, field] in order?.fields">
+          <label :for="id">{{ field.name }}</label
+          ><br />
 
-        <input
-          v-if="field.type === 'text' || field.type === 'datetime-local'"
-          :type="field.type"
-          :id="id"
-          v-model="(field as TextField).default"
-          :required="<true | undefined>field.isRequired"
-        />
-
-        <textarea
-          v-else-if="field.type === 'multiline'"
-          :type="field.type"
-          :id="id"
-          v-model="(field as TextField).default"
-          :required="<true | undefined>field.isRequired"
-          >{{ (field as TextField).default }}</textarea
-        >
-
-        <template
-          v-else-if="field.type === 'checkbox'"
-          v-for="([id, option], index) in (field as OptionsField).options"
-        >
-          <label>{{ option.name }}</label>
           <input
+            v-if="field.type === 'text' || field.type === 'datetime-local'"
             :type="field.type"
             :id="id"
-            :value="option.name"
-            :checked="option.isDefault"
-            @click="onCheckBoxClick($event, option)"
-          /><br v-if="index !== (field as OptionsField).options!.size - 1" />
+            v-model="(field as TextField).default"
+            :required="<true | undefined>field.isRequired"
+          />
+
+          <textarea
+            v-else-if="field.type === 'multiline'"
+            :type="field.type"
+            :id="id"
+            v-model="(field as TextField).default"
+            :required="<true | undefined>field.isRequired"
+            >{{ (field as TextField).default }}</textarea
+          >
+
+          <template
+            v-else-if="field.type === 'checkbox'"
+            v-for="([id, option], index) in (field as OptionsField).options"
+          >
+            <label>{{ option.name }}</label>
+            <input
+              :type="field.type"
+              :id="id"
+              :value="option.name"
+              :checked="option.isDefault"
+              @click="onCheckBoxClick($event, option)"
+            /><br v-if="index !== (field as OptionsField).options!.size - 1" />
+          </template>
+
+          <select v-else-if="field.type === 'select'" :id="id">
+            <option
+              v-for="[id, option] in ((field as OptionsField).options)"
+              :key="id"
+              :id="id"
+              :value="option.name"
+              :selected="<true | undefined>option.isDefault"
+            >
+              {{ option.name }}
+            </option>
+          </select>
+
+          <br />
         </template>
 
-        <select v-else-if="field.type === 'select'" :id="id">
-          <option
-            v-for="[id, option] in ((field as OptionsField).options)"
-            :key="id"
-            :id="id"
-            :value="option.name"
-            :selected="<true | undefined>option.isDefault"
-          >
-            {{ option.name }}
-          </option></select
-        ><br />
-      </template>
+        <input type="submit" value="Confirm" />
+      </fieldset>
+    </form>
 
-      <input type="submit" value="Confirm" />
-    </fieldset>
-  </form>
+    <form @submit.prevent="onFormSubmit()">
+      <fieldset>
+        <legend>Order's information</legend>
+
+        <template v-for="[id, field] in formConfig">
+          <label :for="id">{{ field.name }}</label
+          ><br />
+
+          <input
+            v-if="field.type === 'text' || field.type === 'datetime-local'"
+            :type="field.type"
+            :id="id"
+            v-model="(field as TextField).default"
+            :required="<true | undefined>field.isRequired"
+          />
+
+          <textarea
+            v-else-if="field.type === 'multiline'"
+            :type="field.type"
+            :id="id"
+            v-model="(field as TextField).default"
+            :required="<true | undefined>field.isRequired"
+            >{{ (field as TextField).default }}</textarea
+          >
+
+          <template
+            v-else-if="field.type === 'checkbox'"
+            v-for="([id, option], index) in (field as OptionsField).options"
+          >
+            <label>{{ option.name }}</label>
+            <input
+              :type="field.type"
+              :id="id"
+              :value="option.name"
+              :checked="option.isDefault"
+              @click="onCheckBoxClick($event, option)"
+            /><br v-if="index !== (field as OptionsField).options!.size - 1" />
+          </template>
+
+          <select v-else-if="field.type === 'select'" :id="id">
+            <option
+              v-for="[id, option] in ((field as OptionsField).options)"
+              :key="id"
+              :id="id"
+              :value="option.name"
+              :selected="<true | undefined>option.isDefault"
+            >
+              {{ option.name }}
+            </option>
+          </select>
+
+          <br />
+        </template>
+
+        <input type="submit" value="Confirm" />
+      </fieldset>
+    </form>
+  </div>
 </template>
 
 <style scoped></style>

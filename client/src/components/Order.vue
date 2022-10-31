@@ -4,19 +4,30 @@ import { watch, watchEffect } from "vue";
 
 type Order = { _id: string; title: string; description: string; date: string };
 const { order } = defineProps<{
-  order: { _id: string; fields: Field[] };
+  order: { _id: string; fields: Fields };
   switchEditing: Function;
 }>();
 
-watchEffect(() => console.log(order.fields));
+watchEffect(() => console.log(order));
 </script>
 
 <template>
   <div class="order">
     <div>
-      <p>{{ (order.fields[0] as TextField).default }}</p>
-      <p>{{ (order.fields[1] as TextField).default }}</p>
-      <p>{{ new Date((order.fields[2] as TextField).default || "") }}</p>
+      <p>
+        {{ (Array.from(order.fields.entries())[0][1] as TextField).default }}
+      </p>
+      <p>
+        {{ (Array.from(order.fields.entries())[1][1] as TextField).default }}
+      </p>
+      <p>
+        {{
+          new Date(
+            (Array.from(order.fields.entries())[2][1] as TextField).default ||
+              ""
+          )
+        }}
+      </p>
     </div>
 
     <div><button @click="switchEditing(order._id)">Edit</button></div>
