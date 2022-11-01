@@ -1,32 +1,18 @@
 <script setup lang="ts">
-import type { Field, Fields, Option, OptionsField, TextField } from "@/types";
-import { reactive, watch, watchEffect } from "vue";
+import type {
+  Field,
+  Fields,
+  Option,
+  OptionsField,
+  TextField,
+} from "@/types/form-config";
+import type { Order } from "@/types/form-order";
+import { transformFieldsToMap } from "@/utils/funtions";
+import { ref, watch, watchEffect, type Ref } from "vue";
 
-type Order = { _id: string; title: string; description: string; date: string };
+const { order } = defineProps<{ order?: Order }>();
 
-const { order } = defineProps<{ order?: { _id: string; fields: Fields } }>();
-
-type FormFields = Map<string, Field & { value?: string }>;
-
-const formConfig: FormFields = reactive(new Map());
-
-const getRandomUUIDForElement = () => crypto.randomUUID();
-
-function transformObjectToMap(obj: any[], map: Map<string, Order | Field>) {
-  obj.forEach((item) => {
-    if (item.type === "checkbox" || item.type === "select") {
-      const options = new Map();
-
-      item.options.forEach((option: any) =>
-        options.set(getRandomUUIDForElement(), option)
-      );
-
-      item.options = options;
-    }
-
-    map.set(item._id, item);
-  });
-}
+const formConfig: Ref<Fields> = ref(new Map());
 
 function getFormConfig() {
   fetch("http://localhost:5501/form-config", {
@@ -35,7 +21,7 @@ function getFormConfig() {
     const data = await resp.json();
     console.log("form-config:", data);
 
-    transformObjectToMap(data, formConfig);
+    formConfig.value = transformFieldsToMap(data);
   });
 }
 
@@ -63,7 +49,7 @@ function sendObject(fieldsPrepared: any) {
 function prepareObject() {
   const fieldsPrepared: any = [];
 
-  formConfig.forEach((field) => {
+  formConfig.value.forEach((field) => {
     const fieldPrepared: any = {};
 
     fieldPrepared.type = field.type;
@@ -133,7 +119,9 @@ watch(formConfig, () => console.log(formConfig));
         <legend>Order's information</legend>
 
         <template v-for="[id, field] in order?.fields">
-          <label :for="id">{{ field.name }}</label
+          <label :for="field.type !== 'checkbox' ? id : undefined">{{
+            field.name
+          }}</label
           ><br />
 
           <input
@@ -157,10 +145,11 @@ watch(formConfig, () => console.log(formConfig));
             v-else-if="field.type === 'checkbox'"
             v-for="([id, option], index) in (field as OptionsField).options"
           >
-            <label>{{ option.name }}</label>
+            <label :for="id">{{ option.name }}</label>
             <input
               :type="field.type"
               :id="id"
+              :name="field.name"
               :value="option.name"
               :checked="option.isDefault"
               @click="onCheckBoxClick($event, option)"

@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Field, Fields, TextField } from "@/types";
+import type { Field, Fields, TextField } from "@/types/form-config";
+import type { Order } from "@/types/form-order";
 import { watch, watchEffect } from "vue";
 
-type Order = { _id: string; title: string; description: string; date: string };
 const { order } = defineProps<{
-  order: { _id: string; fields: Fields };
+  order: Order;
   switchEditing: Function;
 }>();
 

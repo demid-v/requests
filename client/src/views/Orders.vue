@@ -1,48 +1,16 @@
 <script setup lang="ts">
-import { reactive, ref, watch, watchEffect, type Ref } from "vue";
+import { ref, watch, watchEffect, type Ref } from "vue";
 import Order from "../components/Order.vue";
 import Form from "../components/Form.vue";
-import type { Field, Fields } from "@/types";
+import type { Orders } from "@/types/form-order";
+import { transformOrdersToMap } from "@/utils/funtions";
 
-type Order = { _id: string; title: string; description: string; date: string };
-
-const orders: Map<string, { _id: string; fields: Fields }> = reactive(
-  new Map()
-);
+const orders: Ref<Orders> = ref(new Map());
 
 watch(orders, () => console.log(orders));
 
 const isEditing = ref(false);
 const editingOrderId = ref();
-
-const getRandomUUIDForElement = () => crypto.randomUUID();
-
-function transformObjectToMap(
-  obj: any[],
-  map: Map<string, { _id: string; fields: Fields }>
-) {
-  obj.forEach((order) => {
-    const fields = new Map();
-
-    order.fields.forEach((item: any) => {
-      if (item.type === "checkbox" || item.type === "select") {
-        const options = new Map();
-
-        item.options.forEach((option: any) =>
-          options.set(getRandomUUIDForElement(), option)
-        );
-
-        item.options = options;
-      }
-
-      fields.set(getRandomUUIDForElement(), item);
-    });
-
-    order.fields = fields;
-
-    map.set(order._id, order);
-  });
-}
 
 function getOrders() {
   fetch("http://localhost:5501/orders", {
@@ -51,7 +19,7 @@ function getOrders() {
     const data = await resp.json();
     console.log("orders:", data);
 
-    transformObjectToMap(data, orders);
+    orders.value = transformOrdersToMap(data);
   });
 }
 

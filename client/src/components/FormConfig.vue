@@ -1,46 +1,23 @@
 <script setup lang="ts">
-import {
-  reactive,
-  ref,
-  watch,
-  watchEffect,
-  type Ref,
-  type VNodeRef,
-} from "vue";
+import { transformFieldsToMap } from "@/utils/funtions";
+import { reactive, ref, watch, watchEffect, type Ref } from "vue";
 import type {
   Fields,
   FieldType,
   TextField,
   OptionsField,
-  Field,
-} from "../types";
+} from "../types/form-config";
 
-const formConfig: Fields = reactive(new Map());
-
-function transformObjectToMap(obj: any[], map: Map<string, Field>) {
-  obj.forEach((item) => {
-    if (item.type === "checkbox" || item.type === "select") {
-      const options = new Map();
-
-      item.options.forEach((option: any) =>
-        options.set(getRandomUUIDForElement(), option)
-      );
-
-      item.options = options;
-    }
-
-    map.set(item._id, item);
-  });
-}
+const formConfig: Ref<Fields> = ref(new Map());
 
 function getFormConfig() {
   fetch("http://localhost:5501/form-config", {
     method: "GET",
   }).then(async (resp) => {
-    const ordersResp = await resp.json();
-    console.log("form-config:", ordersResp);
+    const data = await resp.json();
+    console.log("form-config:", data);
 
-    transformObjectToMap(ordersResp, formConfig);
+    formConfig.value = transformFieldsToMap(data);
   });
 }
 
@@ -51,7 +28,7 @@ const getRandomUUIDForElement = () => crypto.randomUUID();
 function onTypeSelectAddField(event: Event) {
   const value = (event.target as HTMLSelectElement).value as FieldType;
 
-  formConfig.set(getRandomUUIDForElement(), {
+  formConfig.value.set(getRandomUUIDForElement(), {
     type: value,
     name: "",
   });
@@ -62,10 +39,10 @@ function onTypeSelectAddField(event: Event) {
 function onTypeSelectChange(event: Event, id: string) {
   const value = (event.target as HTMLSelectElement).value as FieldType;
 
-  formConfig.set(id, {
+  formConfig.value.set(id, {
     type: value,
-    name: formConfig.get(id)?.name || "",
-    description: formConfig.get(id)?.description || "",
+    name: formConfig.value.get(id)?.name || "",
+    description: formConfig.value.get(id)?.description || "",
   });
 }
 
@@ -128,7 +105,7 @@ function onFormSubmit() {
 }
 
 function isValid() {
-  formConfig.forEach((field) => {
+  formConfig.value.forEach((field) => {
     console.log(field);
 
     console.log((field as OptionsField).options?.size);
@@ -149,7 +126,7 @@ function isValid() {
 function prepareObject() {
   const fieldsPrepared: any = [];
 
-  formConfig.forEach((field) => {
+  formConfig.value.forEach((field) => {
     const fieldPrepared: any = {};
 
     fieldPrepared.type = field.type;
@@ -343,7 +320,7 @@ watch(formConfig, () => console.log(formConfig));
         <option value="multiline">Multiline</option>
         <option value="checkbox">Checkbox</option>
         <option value="select">Select</option>
-        <option value="datetime">Date and time</option></select
+        <option value="datetime-local">Date and time</option></select
       ><br />
 
       <input type="submit" value="Confirm" />
