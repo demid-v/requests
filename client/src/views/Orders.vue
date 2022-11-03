@@ -2,7 +2,7 @@
 import { ref, watch, watchEffect, type Ref } from "vue";
 import Order from "../components/Order.vue";
 import Form from "../components/Form.vue";
-import type { Orders } from "@/types/form-order";
+import type { Orders } from "@/utils/types/form-order";
 import { transformOrdersToMap } from "@/utils/funtions";
 
 const orders: Ref<Orders> = ref(new Map());

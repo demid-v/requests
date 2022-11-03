@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { Field, Fields, TextField } from "@/types/form-config";
-import type { Order } from "@/types/form-order";
-import { watch, watchEffect } from "vue";
+import type { Order } from "@/utils/types/form-order";
+import { watchEffect } from "vue";
 
 const { order } = defineProps<{
   order: Order;
@@ -15,18 +14,13 @@ watchEffect(() => console.log(order));
   <div class="order">
     <div>
       <p>
-        {{ (Array.from(order.fields.entries())[0][1] as TextField).default }}
+        {{ [...order.fields.values()][0].value }}
       </p>
       <p>
-        {{ (Array.from(order.fields.entries())[1][1] as TextField).default }}
+        {{ [...order.fields.values()][1].value }}
       </p>
       <p>
-        {{
-          new Date(
-            (Array.from(order.fields.entries())[2][1] as TextField).default ||
-              ""
-          )
-        }}
+        {{ new Date([...order.fields.values()][2].value || "") }}
       </p>
     </div>
 

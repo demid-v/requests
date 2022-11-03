@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import type {
-  Field,
-  Fields,
-  Option,
-  OptionsField,
-  TextField,
-} from "@/types/form-config";
-import type { Order } from "@/types/form-order";
-import { transformFieldsToMap } from "@/utils/funtions";
-import { ref, watch, watchEffect, type Ref } from "vue";
+import type { Field, Fields, OptionField } from "@/utils/types/form-config";
+import type { OrderFields, Order } from "@/utils/types/form-order";
+import {
+  isOptionsField,
+  transformFieldsToMapForOrderForm,
+} from "@/utils/funtions";
+import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
-const { order } = defineProps<{ order?: Order }>();
+const { order } = defineProps<{ order: Order }>();
 
-const formConfig: Ref<Fields> = ref(new Map());
+const formConfig: Ref<OrderFields> = ref(new Map());
+
+watch(formConfig, (formConfig) => console.log(toRaw(formConfig)));
+
+const ownForm = ref();
+const latestForm = ref();
 
 function getFormConfig() {
   fetch("http://localhost:5501/form-config", {
@@ -21,13 +23,13 @@ function getFormConfig() {
     const data = await resp.json();
     console.log("form-config:", data);
 
-    formConfig.value = transformFieldsToMap(data);
+    formConfig.value = transformFieldsToMapForOrderForm(data);
   });
 }
 
 watchEffect(getFormConfig);
 
-function onCheckBoxClick(event: Event, option: Option) {
+function setOptionValue(event: Event, option: OptionField) {
   if (!(event.target as HTMLInputElement).checked) {
     delete option.isDefault;
   } else {
@@ -46,91 +48,78 @@ function sendObject(fieldsPrepared: any) {
   });
 }
 
-function prepareObject() {
-  const fieldsPrepared: any = [];
-
-  formConfig.value.forEach((field) => {
-    const fieldPrepared: any = {};
-
-    fieldPrepared.type = field.type;
-    fieldPrepared.name = field.name;
-
-    if (field.description?.trim() !== "") {
-      fieldPrepared.description = field.description;
+function isValid(formObject: Fields) {
+  for (const [_id, field] of formObject) {
+    if ((field.name = field.name.trim()) === "") {
+      return false;
     }
 
-    if (field.type === "checkbox" || field.type === "select") {
-      fieldPrepared.options = [];
-
-      (field as OptionsField).options?.forEach((option) => {
-        const optionPrepared: any = {};
-
-        optionPrepared.name = option.name;
-
-        if (option.isDefault === true || option.isDefault === "true") {
-          optionPrepared.isDefault = option.isDefault;
+    if (isOptionsField(field.type)) {
+      for (const [_id, option] of field.options) {
+        if ((option.name = option.name.trim()) === "") {
+          return false;
         }
-
-        fieldPrepared.options.push(optionPrepared);
-      });
-    }
-
-    if (
-      field.type === "text" ||
-      field.type === "multiline" ||
-      field.type === "datetime-local"
-    ) {
-      const defaultTrimmed = (field as TextField).default?.trim();
-
-      if (defaultTrimmed !== "") {
-        fieldPrepared.default = defaultTrimmed;
       }
     }
+  }
 
-    if (field.isRequired === true) {
-      fieldPrepared.isRequired = field.isRequired;
+  return true;
+}
+
+function isOwnFormValid() {
+  return isValid(order.fields);
+}
+
+function isLatestFormValid() {
+  return isValid(formConfig.value);
+}
+
+function prepareFields(fields: Fields) {
+  const fieldsPrepared = (
+    structuredClone(Array.from(toRaw(fields).values())) as Field[]
+  ).map((field) => {
+    if (isOptionsField(field.type)) {
+      field.options = [...field.options.values()];
     }
 
-    fieldsPrepared.push(fieldPrepared);
+    return field;
   });
 
   return fieldsPrepared;
 }
 
-function onOwnFormSubmit() {
-  // if (!isValid()) {
-  //   return false;
-  // }
+function prepareOwnFormFields() {
+  return prepareFields(order.fields);
+}
 
-  const fieldsPrepared = prepareObject();
+function prepareLatestFormFields() {
+  return prepareFields(formConfig.value);
+}
+
+function submitOwnForm() {
+  const fieldsPrepared = prepareOwnFormFields();
 
   console.log(fieldsPrepared);
 
   // sendObject(fieldsPrepared);
 }
 
-function onLatestFormSubmit() {
-  // if (!isValid()) {
-  //   return false;
-  // }
-
-  const fieldsPrepared = prepareObject();
+function submitLatestForm() {
+  const fieldsPrepared = prepareLatestFormFields();
 
   console.log(fieldsPrepared);
 
-  sendObject(fieldsPrepared);
+  // sendObject(fieldsPrepared);
 }
-
-watch(formConfig, () => console.log(formConfig));
 </script>
 
 <template>
   <div>
-    <form @submit.prevent="onOwnFormSubmit()">
+    <form ref="ownForm" @submit.prevent="submitOwnForm()">
       <fieldset>
         <legend>Order's information</legend>
 
-        <template v-for="[id, field] in order?.fields">
+        <template v-for="[id, field] in order.fields">
           <label :for="field.type !== 'checkbox' ? id : undefined">{{
             field.name
           }}</label
@@ -140,22 +129,22 @@ watch(formConfig, () => console.log(formConfig));
             v-if="field.type === 'text' || field.type === 'datetime-local'"
             :type="field.type"
             :id="id"
-            v-model="(field as TextField).default"
-            :required="<true | undefined>field.isRequired"
+            v-model="field.value"
+            :required="field.isRequired"
           />
 
           <textarea
             v-else-if="field.type === 'multiline'"
             :type="field.type"
             :id="id"
-            v-model="(field as TextField).default"
-            :required="<true | undefined>field.isRequired"
-            >{{ (field as TextField).default }}</textarea
+            v-model="field.value"
+            :required="field.isRequired"
+            >{{ field.value }}</textarea
           >
 
           <template
             v-else-if="field.type === 'checkbox'"
-            v-for="([id, option], index) in (field as OptionsField).options"
+            v-for="([id, option], index) in field.options"
           >
             <label :for="id">{{ option.name }}</label>
             <input
@@ -163,18 +152,18 @@ watch(formConfig, () => console.log(formConfig));
               :id="id"
               :name="field.name"
               :value="option.name"
-              :checked="option.isDefault"
-              @click="onCheckBoxClick($event, option)"
-            /><br v-if="index !== (field as OptionsField).options!.size - 1" />
+              :checked="option.isValue"
+              @click="setOptionValue($event, option)"
+            /><br v-if="index !== (field ).options!.size - 1" />
           </template>
 
           <select v-else-if="field.type === 'select'" :id="id">
             <option
-              v-for="[id, option] in ((field as OptionsField).options)"
+              v-for="[id, option] in field.options"
               :key="id"
               :id="id"
               :value="option.name"
-              :selected="<true | undefined>option.isDefault"
+              :selected="option.isValue"
             >
               {{ option.name }}
             </option>
@@ -183,13 +172,13 @@ watch(formConfig, () => console.log(formConfig));
           <br />
         </template>
 
-        <input type="submit" value="Confirm" />
+        <input type="submit" value="Confirm" @click="isOwnFormValid()" />
       </fieldset>
     </form>
 
-    <form @submit.prevent="onLatestFormSubmit()">
+    <form ref="latestForm" @submit.prevent="submitLatestForm()">
       <fieldset>
-        <legend>Order's information</legend>
+        <legend>Latest version of the form</legend>
 
         <template v-for="[id, field] in formConfig">
           <label :for="id">{{ field.name }}</label
@@ -199,40 +188,40 @@ watch(formConfig, () => console.log(formConfig));
             v-if="field.type === 'text' || field.type === 'datetime-local'"
             :type="field.type"
             :id="id"
-            v-model="(field as TextField).default"
-            :required="<true | undefined>field.isRequired"
+            v-model="field.value"
+            :required="field.isRequired"
           />
 
           <textarea
             v-else-if="field.type === 'multiline'"
             :type="field.type"
             :id="id"
-            v-model="(field as TextField).default"
-            :required="<true | undefined>field.isRequired"
-            >{{ (field as TextField).default }}</textarea
+            v-model="field.value"
+            :required="field.isRequired"
+            >{{ field.value }}</textarea
           >
 
           <template
             v-else-if="field.type === 'checkbox'"
-            v-for="([id, option], index) in (field as OptionsField).options"
+            v-for="([id, option], index) in field.options"
           >
             <label>{{ option.name }}</label>
             <input
               :type="field.type"
               :id="id"
               :value="option.name"
-              :checked="option.isDefault"
-              @click="onCheckBoxClick($event, option)"
-            /><br v-if="index !== (field as OptionsField).options!.size - 1" />
+              :checked="option.isValue"
+              @click="setOptionValue($event, option)"
+            /><br v-if="index !== field.options.size - 1" />
           </template>
 
           <select v-else-if="field.type === 'select'" :id="id">
             <option
-              v-for="[id, option] in ((field as OptionsField).options)"
+              v-for="[id, option] in field.options"
               :key="id"
               :id="id"
               :value="option.name"
-              :selected="<true | undefined>option.isDefault"
+              :selected="option.isValue"
             >
               {{ option.name }}
             </option>
@@ -241,7 +230,7 @@ watch(formConfig, () => console.log(formConfig));
           <br />
         </template>
 
-        <input type="submit" value="Confirm" />
+        <input type="submit" value="Confirm" @click="isLatestFormValid()" />
       </fieldset>
     </form>
   </div>
