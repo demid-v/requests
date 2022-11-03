@@ -1,17 +1,36 @@
-import type { Fields } from "@/types/form-config";
-import type { Orders } from "@/types/form-order";
+import type {
+  DateType,
+  Fields,
+  FieldType,
+  OptionsType,
+  RawFields,
+  TextType,
+} from "@/utils/types/form-config";
+import type { Orders } from "@/utils/types/form-order";
 
-const getRandomUUIDForElement = () => crypto.randomUUID();
+function isTextField(type: FieldType): type is TextType {
+  return type === "text" || type === "multiline";
+}
 
-function transformFieldsToMap(fields: any[]) {
+function isOptionsField(type: FieldType): type is OptionsType {
+  return type === "checkbox" || type === "select";
+}
+
+function isDateField(type: FieldType): type is DateType {
+  return type === "datetime-local";
+}
+
+const getRandomUuid = () => crypto.randomUUID();
+
+function transformFieldsToMap(fields: RawFields) {
   const fieldsMap: Fields = new Map();
 
   fields.forEach((item) => {
-    if (item.type === "checkbox" || item.type === "select") {
+    if (isOptionsField(item.type)) {
       const options = new Map();
 
       item.options.forEach((option: any) =>
-        options.set(getRandomUUIDForElement(), option)
+        options.set(getRandomUuid(), option)
       );
 
       item.options = options;
@@ -35,4 +54,11 @@ function transformOrdersToMap(orders: any[]) {
   return ordersMap;
 }
 
-export { transformFieldsToMap, transformOrdersToMap };
+export {
+  isTextField,
+  isOptionsField,
+  isDateField,
+  getRandomUuid,
+  transformFieldsToMap,
+  transformOrdersToMap,
+};

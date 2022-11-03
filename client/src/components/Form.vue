@@ -97,7 +97,19 @@ function prepareObject() {
   return fieldsPrepared;
 }
 
-function onFormSubmit() {
+function onOwnFormSubmit() {
+  // if (!isValid()) {
+  //   return false;
+  // }
+
+  const fieldsPrepared = prepareObject();
+
+  console.log(fieldsPrepared);
+
+  // sendObject(fieldsPrepared);
+}
+
+function onLatestFormSubmit() {
   // if (!isValid()) {
   //   return false;
   // }
@@ -114,7 +126,7 @@ watch(formConfig, () => console.log(formConfig));
 
 <template>
   <div>
-    <form @submit.prevent="onFormSubmit()">
+    <form @submit.prevent="onOwnFormSubmit()">
       <fieldset>
         <legend>Order's information</legend>
 
@@ -175,7 +187,7 @@ watch(formConfig, () => console.log(formConfig));
       </fieldset>
     </form>
 
-    <form @submit.prevent="onFormSubmit()">
+    <form @submit.prevent="onLatestFormSubmit()">
       <fieldset>
         <legend>Order's information</legend>
 

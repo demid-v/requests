@@ -27,7 +27,7 @@ class OrdersDb {
   }
 
   async selectFormStructure() {
-    const data = await this.collectionFormStructure.find({});
+    const data = await this.collectionFormStructure.find({}).sort("index");
 
     return data;
   }
