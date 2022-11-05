@@ -5,7 +5,12 @@ import {
   getRandomUuid,
   transformFieldsToMap,
 } from "@/utils/funtions";
-import type { Fields, FieldType, Options } from "@/utils/types/form-config";
+import type {
+  Fields,
+  FieldType,
+  Options,
+  RawFields,
+} from "@/utils/types/form-config";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
 const formConfig: Ref<Fields> = ref(new Map());
@@ -36,7 +41,6 @@ function addField(event: Event) {
     ...(isOptionsField(type) && {
       options: new Map([[getRandomUuid(), { name: "" }]]),
     }),
-    index: formConfig.value.size + 1,
   });
 
   (event.target as HTMLSelectElement).value = "";
@@ -45,17 +49,16 @@ function addField(event: Event) {
 function changeFieldType(event: Event, id: string) {
   const type = (event.target as HTMLSelectElement).value as FieldType;
 
-  const fieldSet = formConfig.value.get(id);
+  const field = formConfig.value.get(id);
 
-  if (fieldSet) {
+  if (field) {
     formConfig.value.set(id, {
       type,
-      name: fieldSet.name || "",
-      description: fieldSet.description || "",
-      ...(isOptionsField(fieldSet.type) && {
+      name: field.name || "",
+      description: field.description || "",
+      ...(isOptionsField(field.type) && {
         options: new Map([[getRandomUuid(), { name: "" }]]),
       }),
-      index: fieldSet.index,
     });
   }
 }
@@ -116,12 +119,14 @@ function isValid() {
 }
 
 function prepareObject() {
-  const fieldsPrepared = structuredClone(
-    Array.from(toRaw(formConfig.value).values())
-  ).map((field) => {
+  const fieldsPrepared = (
+    structuredClone([...toRaw(formConfig.value).values()]) as RawFields
+  ).map((field, index) => {
     if (isOptionsField(field.type)) {
       field.options = [...field.options.values()];
     }
+
+    field.index = index + 1;
 
     return field;
   });
@@ -135,8 +140,8 @@ function sendObject(fieldsPrepared: any) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(fieldsPrepared),
   }).then(async (resp) => {
-    const ordersResp = await resp.json();
-    console.log("resp:", ordersResp);
+    const data = await resp.json();
+    console.log("resp:", data);
   });
 }
 
@@ -215,6 +220,11 @@ function onDefaultValueChange(event: Event, id: string) {
           @change="onDescriptionChange($event, id)"
         /><br />
 
+        <!-- Using type guards here and elsewhere gives the following error: 
+          "Property 'defaultValue' does not exist on type 'Field'. 
+          Property 'defaultValue' does not exist on type 'OptionsField'."
+          Writing "field.type === 'text' || field.type === 'multiline'", 
+          which is supposedly the same thing, gets rig of the messages of this kind. -->
         <template v-if="isTextField(field.type)">
           <label :for="'default-value-' + id">Default value</label><br />
           <input

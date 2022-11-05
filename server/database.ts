@@ -1,27 +1,27 @@
 const mongoose = require("mongoose");
 
-class OrdersDb {
-  private collectionOrder: any;
+class RequestsDb {
+  private collectionRequest: any;
   private collectionFormStructure: any;
 
   async startDb() {
-    await mongoose.connect("mongodb://localhost:27017/orders");
+    await mongoose.connect("mongodb://localhost:27017/requests");
 
-    this.collectionOrder = mongoose.model(
-      "Orders",
+    this.collectionRequest = mongoose.model(
+      "Requests",
       new mongoose.Schema({}, { strict: false }),
-      "order"
+      "request"
     );
 
     this.collectionFormStructure = mongoose.model(
       "FormStructure",
       new mongoose.Schema({}, { strict: false }),
-      "form_structure"
+      "formStructure"
     );
   }
 
-  async selectAllOrders() {
-    const data = await this.collectionOrder.find({});
+  async selectAllRequests() {
+    const data = await this.collectionRequest.find({});
 
     return data;
   }
@@ -40,11 +40,11 @@ class OrdersDb {
     return data;
   }
 
-  async patchOrder(obj: any) {
-    const data = await this.collectionOrder.create({ fields: obj });
+  async patchRequest(obj: any) {
+    const data = await this.collectionRequest.create({ fields: obj });
 
     return data;
   }
 }
 
-export default OrdersDb;
+export default RequestsDb;

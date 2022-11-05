@@ -1,8 +1,8 @@
 {
-  "name": "orders",
+  "name": "requests",
   "version": "0.0.0",
-  "description": "Test app for managing orders",
-  "author": "Demid Evgenyevich <vasilyev.demid.e@gmail.com>",
+  "description": "Mock app for managing requests.",
+  "author": "Demid Vasilyev <vasilyev.demid.e@gmail.com>",
   "scripts": {
     "start:dev": "concurrently \"cd ./server && npm run start:dev\" \"cd ./client && npm run dev\""
   },

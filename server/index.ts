@@ -1,7 +1,7 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
-import OrdersDb from "./database";
-import setRoutes from "./routes/routesConfig";
+import RequestsDb from "./database";
+import setRoutes from "./routes/routes-config";
 
 dotenv.config();
 
@@ -31,10 +31,10 @@ app.use(
 
 const port = process.env.PORT;
 
-const ordersDb: OrdersDb = new OrdersDb();
+const requestsDb: RequestsDb = new RequestsDb();
 
-ordersDb.startDb().then(() => {
-  setRoutes(app, ordersDb);
+requestsDb.startDb().then(() => {
+  setRoutes(app, requestsDb);
 
   app.listen(port, () => {
     console.log(`Server is running at https://localhost:${port}`);

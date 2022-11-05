@@ -10,7 +10,6 @@ type CommonFieldBody = {
   name: string;
   description?: string;
   isRequired?: true;
-  index: number;
 };
 
 type GenericField = CommonFieldBody & {
@@ -40,19 +39,19 @@ type Field = TextField | OptionsField | DateField;
 
 type Fields = Map<string, Field>;
 
-type GenericRawField = CommonFieldBody & { _id: string };
+type RawGenericField = CommonFieldBody & { _id: string; index: number };
 
-type RawTextField = GenericRawField & {
+type RawTextField = RawGenericField & {
   type: TextType;
   defaultValue?: string;
 };
 
-type RawOptionsField = GenericRawField & {
+type RawOptionsField = RawGenericField & {
   type: OptionsType;
   options: Options;
 };
 
-type RawDateField = GenericRawField & { type: DateType };
+type RawDateField = RawGenericField & { type: DateType };
 
 type RawField = RawTextField | RawOptionsField | RawDateField;
 
@@ -70,7 +69,8 @@ export type {
   OptionsField,
   DateField,
   Field,
-  GenericRawField,
+  RawGenericField,
+  RawField,
   RawFields,
   Fields,
 };

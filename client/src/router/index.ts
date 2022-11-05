@@ -1,17 +1,17 @@
 import { createRouter, createWebHistory } from "vue-router";
-import Orders from "../views/Orders.vue";
+import Requests from "../views/Requests.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: "/",
-      redirect: "/orders",
+      redirect: "/requests",
     },
     {
-      path: "/orders",
-      name: "orders",
-      component: Orders,
+      path: "/requests",
+      name: "requests",
+      component: Requests,
     },
     {
       path: "/form-config",

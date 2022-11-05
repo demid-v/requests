@@ -5,8 +5,14 @@ import { RouterLink } from "vue-router";
 <template>
   <header>
     <nav>
-      <RouterLink to="/orders">Orders</RouterLink>
-      <RouterLink to="/form-config">Form config</RouterLink>
+      <ul>
+        <li>
+          <RouterLink to="/requests">Requests</RouterLink>
+        </li>
+        <li>
+          <RouterLink to="/form-config">Form config</RouterLink>
+        </li>
+      </ul>
     </nav>
   </header>
 </template>

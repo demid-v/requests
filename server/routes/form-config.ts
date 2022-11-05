@@ -1,16 +1,16 @@
 import { Express, Request, Response } from "express";
-import OrdersDb from "../database";
+import RequestsDb from "../database";
 
-function setFormConfigRoutes(app: Express, ordersDb: OrdersDb) {
+function setFormConfigRoutes(app: Express, requestsDb: RequestsDb) {
   app.get("/form-config", async (_req: Request, res: Response) => {
-    const data = await ordersDb.selectFormStructure();
+    const data = await requestsDb.selectFormStructure();
 
     res.send(data);
   });
 
   app.post("/form-config", async (req: Request, res: Response) => {
     console.log(req.body);
-    const data = await ordersDb.insertFormStructure(req.body);
+    const data = await requestsDb.insertFormStructure(req.body);
 
     res.send(data);
   });

@@ -7,11 +7,11 @@ import type {
   TextType,
 } from "@/utils/types/form-config";
 import type {
-  OrderFields,
-  Orders,
-  RawOrderFields,
-  RawOrders,
-} from "@/utils/types/form-order";
+  RequestFields,
+  Requests,
+  RawRequestFields,
+  RawRequests,
+} from "@/utils/types/form-request";
 
 function isTextField(type: FieldType): type is TextType {
   return type === "text" || type === "multiline";
@@ -27,7 +27,7 @@ function isDateField(type: FieldType): type is DateType {
 
 const getRandomUuid = () => crypto.randomUUID();
 
-function transformFieldsToMap(fields: RawFields | RawOrderFields) {
+function transformFieldsToMap(fields: RawFields | RawRequestFields) {
   const fieldsMap: Fields = new Map();
 
   fields.forEach((field) => {
@@ -45,15 +45,10 @@ function transformFieldsToMap(fields: RawFields | RawOrderFields) {
   return fieldsMap;
 }
 
-function transformFieldsToMapForOrderForm(fields: RawFields) {
-  const fieldsMap: OrderFields = new Map();
+function transformFieldsToMapForRequestForm(fields: RawFields) {
+  const fieldsMap: RequestFields = new Map();
 
   fields.forEach((field) => {
-    if (field.defaultValue !== undefined) {
-      field.value = field.defaultValue;
-      delete field.defaultValue;
-    }
-
     if (isOptionsField(field.type)) {
       const options = new Map();
 
@@ -67,6 +62,9 @@ function transformFieldsToMapForOrderForm(fields: RawFields) {
       });
 
       field.options = options;
+    } else if ("defaultValue" in field) {
+      field.value = field.defaultValue;
+      delete field.defaultValue;
     }
 
     fieldsMap.set(field._id, field);
@@ -75,17 +73,17 @@ function transformFieldsToMapForOrderForm(fields: RawFields) {
   return fieldsMap;
 }
 
-function transformOrdersToMap(orders: RawOrders) {
-  const ordersMap: Orders = new Map();
+function transformRequestsToMap(requests: RawRequests) {
+  const requestsMap: Requests = new Map();
 
-  orders.forEach((order) => {
-    ordersMap.set(order._id, {
-      ...order,
-      fields: transformFieldsToMap(order.fields),
+  requests.forEach((request) => {
+    requestsMap.set(request._id, {
+      ...request,
+      fields: transformFieldsToMap(request.fields),
     });
   });
 
-  return ordersMap;
+  return requestsMap;
 }
 
 export {
@@ -94,6 +92,6 @@ export {
   isDateField,
   getRandomUuid,
   transformFieldsToMap,
-  transformFieldsToMapForOrderForm,
-  transformOrdersToMap,
+  transformFieldsToMapForRequestForm,
+  transformRequestsToMap,
 };
