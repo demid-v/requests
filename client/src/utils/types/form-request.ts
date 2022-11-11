@@ -14,7 +14,6 @@ type RequestTextField = GenericField & {
 type RequestOptionField = {
   name: string;
   isValue?: true;
-  isInvalid?: true;
 };
 
 type RequestOptions = Map<string, RequestOptionField>;
@@ -59,6 +58,8 @@ type RawRequests = RawRequest[];
 
 export type {
   RequestOptionField,
+  RequestOptions,
+  RequestField,
   RequestFields,
   Request,
   Requests,

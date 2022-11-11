@@ -1,10 +1,14 @@
 import type {
   DateType,
   Fields,
-  FieldType,
+  Field,
   OptionsType,
   RawFields,
   TextType,
+  TextField,
+  OptionsField,
+  DateField,
+  FieldType,
 } from "@/utils/types/form-config";
 import type {
   RequestFields,
@@ -13,16 +17,28 @@ import type {
   RawRequests,
 } from "@/utils/types/form-request";
 
-function isTextField(type: FieldType): type is TextType {
+function isTextType(type: FieldType): type is TextType {
   return type === "text" || type === "multiline";
 }
 
-function isOptionsField(type: FieldType): type is OptionsType {
+function isOptionsType(type: FieldType): type is OptionsType {
   return type === "checkbox" || type === "select";
 }
 
-function isDateField(type: FieldType): type is DateType {
+function isDateType(type: FieldType): type is DateType {
   return type === "datetime-local";
+}
+
+function isTextField(field: Field): field is TextField {
+  return isTextType(field.type);
+}
+
+function isOptionsField(field: Field): field is OptionsField {
+  return isOptionsType(field.type);
+}
+
+function isDateField(field: Field): field is DateField {
+  return isDateType(field.type);
 }
 
 const getRandomUuid = () => crypto.randomUUID();
@@ -31,7 +47,7 @@ function transformFieldsToMap(fields: RawFields | RawRequestFields) {
   const fieldsMap: Fields = new Map();
 
   fields.forEach((field) => {
-    if (isOptionsField(field.type)) {
+    if (isOptionsField(field)) {
       const options = new Map();
 
       field.options.forEach((option) => options.set(getRandomUuid(), option));
@@ -49,25 +65,24 @@ function transformFieldsToMapForRequestForm(fields: RawFields) {
   const fieldsMap: RequestFields = new Map();
 
   fields.forEach((field) => {
-    if (isOptionsField(field.type)) {
-      const options = new Map();
+    const transformedField: any = field;
+
+    if (isTextField(field)) {
+      transformedField.value = field.defaultValue;
+    } else if (isOptionsField(field)) {
+      transformedField.options = new Map();
 
       field.options.forEach((option) => {
-        if (option.isDefault !== undefined) {
-          option.isValue = option.isDefault;
-          delete option.isDefault;
-        }
+        const { isDefault, ...optionProps } = option;
 
-        options.set(getRandomUuid(), option);
+        transformedField.options.set(getRandomUuid(), {
+          ...optionProps,
+          isValue: isDefault,
+        });
       });
-
-      field.options = options;
-    } else if ("defaultValue" in field) {
-      field.value = field.defaultValue;
-      delete field.defaultValue;
     }
 
-    fieldsMap.set(field._id, field);
+    fieldsMap.set(transformedField._id, transformedField);
   });
 
   return fieldsMap;
@@ -87,6 +102,9 @@ function transformRequestsToMap(requests: RawRequests) {
 }
 
 export {
+  isTextType,
+  isOptionsType,
+  isDateType,
   isTextField,
   isOptionsField,
   isDateField,

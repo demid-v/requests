@@ -4,6 +4,7 @@ import {
   isOptionsField,
   getRandomUuid,
   transformFieldsToMap,
+  isOptionsType,
 } from "@/utils/funtions";
 import type {
   Fields,
@@ -33,12 +34,12 @@ function getFormConfig() {
 watchEffect(getFormConfig);
 
 function addField(event: Event) {
-  const type = (event.target as HTMLSelectElement).value as FieldType;
+  const fieldType = (event.target as HTMLSelectElement).value as FieldType;
 
   formConfig.value.set(getRandomUuid(), {
-    type,
+    type: fieldType,
     name: "",
-    ...(isOptionsField(type) && {
+    ...(isOptionsType(fieldType) && {
       options: new Map([[getRandomUuid(), { name: "" }]]),
     }),
   });
@@ -47,16 +48,15 @@ function addField(event: Event) {
 }
 
 function changeFieldType(event: Event, id: string) {
-  const type = (event.target as HTMLSelectElement).value as FieldType;
-
+  const fieldType = (event.target as HTMLSelectElement).value as FieldType;
   const field = formConfig.value.get(id);
 
   if (field) {
     formConfig.value.set(id, {
-      type,
+      type: fieldType,
       name: field.name || "",
       description: field.description || "",
-      ...(isOptionsField(field.type) && {
+      ...(isOptionsType(fieldType) && {
         options: new Map([[getRandomUuid(), { name: "" }]]),
       }),
     });
@@ -100,17 +100,23 @@ function submitForm() {
   // sendObject(fieldsPrepared);
 }
 
-function isValid() {
+function wipeBlankInputs() {
   for (const [_id, field] of formConfig.value) {
-    if ((field.name = field.name.trim()) === "") {
-      return false;
+    field.name = field.name.trim();
+
+    if ((field.description = field.description?.trim()) === "") {
+      delete field.description;
     }
 
-    if (isOptionsField(field.type)) {
+    if (isTextField(field)) {
+      if ((field.defaultValue = field.defaultValue?.trim()) === "") {
+        delete field.defaultValue;
+      }
+    }
+
+    if (isOptionsField(field)) {
       for (const [_id, option] of field.options) {
-        if ((option.name = option.name.trim()) === "") {
-          return false;
-        }
+        option.name = option.name.trim();
       }
     }
   }
@@ -122,11 +128,11 @@ function prepareObject() {
   const fieldsPrepared = (
     structuredClone([...toRaw(formConfig.value).values()]) as RawFields
   ).map((field, index) => {
-    if (isOptionsField(field.type)) {
-      field.options = [...field.options.values()];
-    }
-
     field.index = index + 1;
+
+    if (isOptionsField(field)) {
+      return { ...field, options: [...field.options.values()] };
+    }
 
     return field;
   });
@@ -144,26 +150,6 @@ function sendObject(fieldsPrepared: any) {
     console.log("resp:", data);
   });
 }
-
-function onOptionalFieldChange(event: Event, id: string, property: string) {
-  const value = (event.target as HTMLInputElement).value;
-
-  const field = formConfig.value.get(id);
-
-  if (value) {
-    field[property] = value;
-  } else {
-    delete field[property];
-  }
-}
-
-function onDescriptionChange(event: Event, id: string) {
-  onOptionalFieldChange(event, id, "description");
-}
-
-function onDefaultValueChange(event: Event, id: string) {
-  onOptionalFieldChange(event, id, "defaultValue");
-}
 </script>
 
 <template>
@@ -179,7 +165,6 @@ function onDefaultValueChange(event: Event, id: string) {
         <label :for="'field-type-' + id">Field type</label><br />
         <select
           :id="'field-type-' + id"
-          :name="id"
           required
           @change="changeFieldType($event, id)"
         >
@@ -206,7 +191,6 @@ function onDefaultValueChange(event: Event, id: string) {
         <input
           type="text"
           :id="'field-name-' + id"
-          :name="id"
           v-model="field.name"
           required
         /><br />
@@ -215,42 +199,26 @@ function onDefaultValueChange(event: Event, id: string) {
         <input
           type="text"
           :id="'description-' + id"
-          :name="id"
-          :value="field.description"
-          @change="onDescriptionChange($event, id)"
+          v-model="field.description"
         /><br />
 
-        <!-- Using type guards here and elsewhere gives the following error: 
-          "Property 'defaultValue' does not exist on type 'Field'. 
-          Property 'defaultValue' does not exist on type 'OptionsField'."
-          Writing "field.type === 'text' || field.type === 'multiline'", 
-          which is supposedly the same thing, gets rig of the messages of this kind. -->
-        <template v-if="isTextField(field.type)">
+        <template v-if="isTextField(field)">
           <label :for="'default-value-' + id">Default value</label><br />
           <input
             type="text"
             :id="'default-value-' + id"
-            :name="id"
-            :value="field.defaultValue"
-            @change="onDefaultValueChange($event, id)"
+            v-model="field.defaultValue"
           /><br />
         </template>
 
-        <template v-else-if="isOptionsField(field.type)">
+        <template v-else-if="isOptionsField(field)">
           <template v-for="[id, option] in field.options" :key="id">
             <label :for="id">Option name</label><br />
-            <input
-              type="text"
-              :id="id"
-              :name="id"
-              v-model="option.name"
-              required
-            />
+            <input type="text" :id="id" v-model="option.name" required />
             <input
               type="checkbox"
-              name="default-option"
-              value="true"
               title="Set as default"
+              :value="true"
               :checked="option.isDefault"
               @change="setDefaultOption($event, field.options, id)"
             />
@@ -272,7 +240,6 @@ function onDefaultValueChange(event: Event, id: string) {
         <input
           type="checkbox"
           :id="'is-required-' + id"
-          name="is-required"
           value="true"
           v-model="field.isRequired"
         /><br />
@@ -288,7 +255,7 @@ function onDefaultValueChange(event: Event, id: string) {
         <option value="datetime-local">Date and time</option></select
       ><br />
 
-      <input type="submit" value="Confirm" @click="isValid()" />
+      <input type="submit" value="Confirm" @click="wipeBlankInputs()" />
     </fieldset>
   </form>
 </template>

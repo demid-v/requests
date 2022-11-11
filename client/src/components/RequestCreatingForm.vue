@@ -5,6 +5,7 @@ import {
 } from "@/utils/funtions";
 import type { Fields, Field } from "@/utils/types/form-config";
 import type {
+  RequestField,
   RequestFields,
   RequestOptionField,
 } from "@/utils/types/form-request";
@@ -56,16 +57,16 @@ function isValid(formObject: RequestFields) {
     }
 
     if (field.type === "checkbox" && field.isRequired) {
-      let valid = false;
+      let isValidOptions = false;
 
       for (const [_id, option] of field.options) {
         if (option.isValue) {
-          valid = true;
+          isValidOptions = true;
           break;
         }
       }
 
-      if (!valid) {
+      if (!isValidOptions) {
         return false;
       }
     }
@@ -78,12 +79,12 @@ function checkFormValidity() {
   isFormValid.value = isValid(formConfig.value);
 }
 
-function prepareFields(fields: Fields) {
+function prepareFields(fields: RequestFields) {
   const fieldsPrepared = (
-    structuredClone([...toRaw(fields).values()]) as Field[]
+    structuredClone([...toRaw(fields).values()]) as RequestField[]
   ).map((field) => {
-    if (isOptionsField(field.type)) {
-      field.options = [...field.options.values()];
+    if (isOptionsField(field)) {
+      return { ...field, options: [...field.options.values()] };
     }
 
     return field;
@@ -92,13 +93,9 @@ function prepareFields(fields: Fields) {
   return fieldsPrepared;
 }
 
-function prepareFormFields() {
-  return prepareFields(formConfig.value);
-}
-
 function submitForm() {
   if (isFormValid.value) {
-    const fieldsPrepared = prepareFormFields();
+    const fieldsPrepared = prepareFields(formConfig.value);
 
     console.log(fieldsPrepared);
 

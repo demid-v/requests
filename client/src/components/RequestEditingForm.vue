@@ -2,20 +2,19 @@
 import { isOptionsField } from "@/utils/funtions";
 import type { Field, Fields } from "@/utils/types/form-config";
 import type {
+  Request,
+  RequestField,
   RequestFields,
   RequestOptionField,
 } from "@/utils/types/form-request";
-import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
+import { ref, toRaw, watchEffect, type Ref } from "vue";
 
-const props = defineProps<{ request?: Request }>();
+const props = defineProps<{ request: Request }>();
 
-const request: Ref<Request | undefined> = ref();
+const request: Ref<Request> = ref(structuredClone(toRaw(props?.request)));
 
-watchEffect(() => (request.value = structuredClone(toRaw(props?.request))));
-
-watch(props, () => {
+watchEffect(() => {
   console.log(props.request);
-
   request.value = structuredClone(toRaw(props?.request));
 });
 
@@ -32,7 +31,7 @@ function setOptionValue(event: Event, option: RequestOptionField) {
 
 function sendObject(fieldsPrepared: any) {
   fetch("http://localhost:5501/request", {
-    method: "POST",
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(fieldsPrepared),
   }).then(async (resp) => {
@@ -70,12 +69,12 @@ function checkFormValidity() {
   isFormValid.value = isValid(request.value.fields);
 }
 
-function prepareFields(fields: Fields) {
+function prepareFields(fields: RequestFields) {
   const fieldsPrepared = (
-    structuredClone([...toRaw(fields).values()]) as Field[]
+    structuredClone([...toRaw(fields).values()]) as RequestField[]
   ).map((field) => {
-    if (isOptionsField(field.type)) {
-      field.options = [...field.options.values()];
+    if (isOptionsField(field)) {
+      return { ...field, options: [...field.options.values()] };
     }
 
     return field;
@@ -84,13 +83,9 @@ function prepareFields(fields: Fields) {
   return fieldsPrepared;
 }
 
-function prepareFormFields() {
-  return prepareFields(request.value.fields);
-}
-
 function submitForm() {
   if (isFormValid.value) {
-    const fieldsPrepared = prepareFormFields();
+    const fieldsPrepared = prepareFields(request.value.fields);
 
     console.log(fieldsPrepared);
 
@@ -135,7 +130,6 @@ function submitForm() {
           <input
             :type="field.type"
             :id="id"
-            :name="field.name"
             :value="option.name"
             :checked="option.isValue"
             @click="setOptionValue($event, option)"

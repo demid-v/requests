@@ -20,6 +20,13 @@ function setRequestsRoutes(app: Express, requestsDb: RequestsDb) {
 
     res.send(data);
   });
+
+  app.patch("/request", async (req: Request, res: Response) => {
+    console.log(req.body);
+    // const data = await requestsDb.patchRequest(req.body);
+
+    res.send(req.body);
+  });
 }
 
 export default setRequestsRoutes;

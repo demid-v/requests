@@ -70,7 +70,7 @@ function openForm() {
       <RequestWindow
         v-show="isFormOpen"
         :request="
-          editingRequestId !== null ? requests.get(editingRequestId) : undefined
+          editingRequestId != null ? requests.get(editingRequestId) : undefined
         "
       />
     </div>
