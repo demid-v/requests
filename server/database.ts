@@ -20,28 +20,40 @@ class RequestsDb {
     );
   }
 
-  async selectAllRequests() {
+  async getRequests() {
     const data = await this.collectionRequest.find({});
 
     return data;
   }
 
-  async selectFormStructure() {
-    const data = await this.collectionFormStructure.find({}).sort("index");
-
-    return data;
-  }
-
-  async insertFormStructure(obj: any) {
-    await this.collectionFormStructure.deleteMany({});
-
-    const data = await this.collectionFormStructure.create(obj);
+  async postRequest(obj: any) {
+    const data = await this.collectionRequest.updateOne(
+      { _id: obj._id },
+      { $set: { fields: obj.fields } }
+    );
 
     return data;
   }
 
   async patchRequest(obj: any) {
-    const data = await this.collectionRequest.create({ fields: obj });
+    const data = await this.collectionRequest.updateOne(
+      { _id: obj._id },
+      { $set: { fields: obj.fields } }
+    );
+
+    return data;
+  }
+
+  async getFormStructure() {
+    const data = await this.collectionFormStructure.find({}).sort("index");
+
+    return data;
+  }
+
+  async postFormStructure(obj: any) {
+    await this.collectionFormStructure.deleteMany({});
+
+    const data = await this.collectionFormStructure.create(obj);
 
     return data;
   }

@@ -4,7 +4,7 @@ import type {
   RawGenericField,
   OptionsType,
   TextType,
-} from "./form-config";
+} from "./form-structure";
 
 type RequestTextField = GenericField & {
   type: TextType;

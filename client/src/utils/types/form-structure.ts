@@ -69,8 +69,8 @@ export type {
   OptionsField,
   DateField,
   Field,
+  Fields,
   RawGenericField,
   RawField,
   RawFields,
-  Fields,
 };

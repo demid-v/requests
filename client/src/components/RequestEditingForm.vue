@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { isOptionsField } from "@/utils/funtions";
-import type { Field, Fields } from "@/utils/types/form-config";
 import type {
   Request,
   RequestField,
@@ -85,11 +84,14 @@ function prepareFields(fields: RequestFields) {
 
 function submitForm() {
   if (isFormValid.value) {
-    const fieldsPrepared = prepareFields(request.value.fields);
+    const requestPrepared = {
+      ...request.value,
+      fields: prepareFields(request.value.fields),
+    };
 
-    console.log(fieldsPrepared);
+    console.log(requestPrepared);
 
-    // sendObject(fieldsPrepared);
+    sendObject(requestPrepared);
   }
 }
 </script>

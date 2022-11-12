@@ -11,23 +11,23 @@ import type {
   FieldType,
   Options,
   RawFields,
-} from "@/utils/types/form-config";
+} from "@/utils/types/form-structure";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
-const formConfig: Ref<Fields> = ref(new Map());
+const formStructure: Ref<Fields> = ref(new Map());
 
-watch(formConfig, (formConfig) => console.log(toRaw(formConfig)));
+watch(formStructure, (formStructure) => console.log(toRaw(formStructure)));
 
 const form = ref();
 
 function getFormConfig() {
-  fetch("http://localhost:5501/form-config", {
+  fetch("http://localhost:5501/form-structure", {
     method: "GET",
   }).then(async (resp) => {
     const data = await resp.json();
-    console.log("form-config:", data);
+    console.log("form-structure:", data);
 
-    formConfig.value = transformFieldsToMap(data);
+    formStructure.value = transformFieldsToMap(data);
   });
 }
 
@@ -36,7 +36,7 @@ watchEffect(getFormConfig);
 function addField(event: Event) {
   const fieldType = (event.target as HTMLSelectElement).value as FieldType;
 
-  formConfig.value.set(getRandomUuid(), {
+  formStructure.value.set(getRandomUuid(), {
     type: fieldType,
     name: "",
     ...(isOptionsType(fieldType) && {
@@ -49,10 +49,10 @@ function addField(event: Event) {
 
 function changeFieldType(event: Event, id: string) {
   const fieldType = (event.target as HTMLSelectElement).value as FieldType;
-  const field = formConfig.value.get(id);
+  const field = formStructure.value.get(id);
 
   if (field) {
-    formConfig.value.set(id, {
+    formStructure.value.set(id, {
       type: fieldType,
       name: field.name || "",
       description: field.description || "",
@@ -101,7 +101,7 @@ function submitForm() {
 }
 
 function wipeBlankInputs() {
-  for (const [_id, field] of formConfig.value) {
+  for (const [_id, field] of formStructure.value) {
     field.name = field.name.trim();
 
     if ((field.description = field.description?.trim()) === "") {
@@ -120,13 +120,11 @@ function wipeBlankInputs() {
       }
     }
   }
-
-  return true;
 }
 
 function prepareObject() {
   const fieldsPrepared = (
-    structuredClone([...toRaw(formConfig.value).values()]) as RawFields
+    structuredClone([...toRaw(formStructure.value).values()]) as RawFields
   ).map((field, index) => {
     field.index = index + 1;
 
@@ -141,7 +139,7 @@ function prepareObject() {
 }
 
 function sendObject(fieldsPrepared: any) {
-  fetch("http://localhost:5501/form-config", {
+  fetch("http://localhost:5501/form-structure", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(fieldsPrepared),
@@ -155,10 +153,10 @@ function sendObject(fieldsPrepared: any) {
 <template>
   <form ref="form" @submit.prevent="submitForm()">
     <fieldset>
-      <legend>Form config</legend>
+      <legend>Form structure</legend>
 
-      <fieldset v-for="[id, field] in formConfig" :key="id">
-        <button type="button" @click="deleteField(formConfig, id)">
+      <fieldset v-for="[id, field] in formStructure" :key="id">
+        <button type="button" @click="deleteField(formStructure, id)">
           Delete</button
         ><br />
 

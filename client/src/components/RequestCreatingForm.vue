@@ -3,7 +3,6 @@ import {
   transformFieldsToMapForRequestForm,
   isOptionsField,
 } from "@/utils/funtions";
-import type { Fields, Field } from "@/utils/types/form-config";
 import type {
   RequestField,
   RequestFields,

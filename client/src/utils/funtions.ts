@@ -9,7 +9,7 @@ import type {
   OptionsField,
   DateField,
   FieldType,
-} from "@/utils/types/form-config";
+} from "@/utils/types/form-structure";
 import type {
   RequestFields,
   Requests,
@@ -65,7 +65,7 @@ function transformFieldsToMapForRequestForm(fields: RawFields) {
   const fieldsMap: RequestFields = new Map();
 
   fields.forEach((field) => {
-    const transformedField: any = field;
+    const transformedField = structuredClone(field);
 
     if (isTextField(field)) {
       transformedField.value = field.defaultValue;
@@ -77,7 +77,7 @@ function transformFieldsToMapForRequestForm(fields: RawFields) {
 
         transformedField.options.set(getRandomUuid(), {
           ...optionProps,
-          isValue: isDefault,
+          ...(isDefault && { isValue: isDefault }),
         });
       });
     }
