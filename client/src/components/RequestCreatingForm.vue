@@ -10,25 +10,25 @@ import type {
 } from "@/utils/types/form-request";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
-const formConfig: Ref<RequestFields> = ref(new Map());
+const formStructure: Ref<RequestFields> = ref(new Map());
 
 const form = ref();
 const isFormValid = ref(false);
 
-watch(formConfig, (formConfig) => console.log(toRaw(formConfig)));
+watch(formStructure, (formStructure) => console.log(toRaw(formStructure)));
 
-function getFormConfig() {
-  fetch("http://localhost:5501/form-config", {
+function getFormStructure() {
+  fetch("http://localhost:5501/form-structure", {
     method: "GET",
   }).then(async (resp) => {
     const data = await resp.json();
-    console.log("form-config:", data);
+    console.log("form-structure:", data);
 
-    formConfig.value = transformFieldsToMapForRequestForm(data);
+    formStructure.value = transformFieldsToMapForRequestForm(data);
   });
 }
 
-watchEffect(getFormConfig);
+watchEffect(getFormStructure);
 
 function setOptionValue(event: Event, option: RequestOptionField) {
   if (!(event.target as HTMLInputElement).checked) {
@@ -75,7 +75,7 @@ function isValid(formObject: RequestFields) {
 }
 
 function checkFormValidity() {
-  isFormValid.value = isValid(formConfig.value);
+  isFormValid.value = isValid(formStructure.value);
 }
 
 function prepareFields(fields: RequestFields) {
@@ -94,7 +94,7 @@ function prepareFields(fields: RequestFields) {
 
 function submitForm() {
   if (isFormValid.value) {
-    const fieldsPrepared = prepareFields(formConfig.value);
+    const fieldsPrepared = prepareFields(formStructure.value);
 
     console.log(fieldsPrepared);
 
@@ -108,7 +108,7 @@ function submitForm() {
     <fieldset>
       <legend>Latest version of the form</legend>
 
-      <template v-for="[id, field] in formConfig">
+      <template v-for="[id, field] in formStructure">
         <label :for="id">{{ field.name }}</label
         ><br />
 

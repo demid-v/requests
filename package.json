@@ -4,7 +4,10 @@
   "description": "Mock app for managing requests.",
   "author": "Demid Vasilyev <vasilyev.demid.e@gmail.com>",
   "scripts": {
-    "start:dev": "concurrently \"cd ./server && npm run start:dev\" \"cd ./client && npm run dev\""
+    "start:dev": "concurrently \"cd ./server && npm run start:dev\" \"cd ./client && npm run dev\"",
+    "start": "concurrently \"cd ./server && npm run start\" \"serve -s dist/client\"",
+    "build": "concurrently \"cd ./server && npm run build\" \"cd ./client && npm run build-only\"",
+    "build-start": "npm run build && npm run start"
   },
   "dependencies": {
     "dotenv": "^16.0.2",

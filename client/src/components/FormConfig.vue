@@ -20,7 +20,7 @@ watch(formStructure, (formStructure) => console.log(toRaw(formStructure)));
 
 const form = ref();
 
-function getFormConfig() {
+function getFormStructure() {
   fetch("http://localhost:5501/form-structure", {
     method: "GET",
   }).then(async (resp) => {
@@ -31,7 +31,7 @@ function getFormConfig() {
   });
 }
 
-watchEffect(getFormConfig);
+watchEffect(getFormStructure);
 
 function addField(event: Event) {
   const fieldType = (event.target as HTMLSelectElement).value as FieldType;
