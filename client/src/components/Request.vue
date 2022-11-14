@@ -1,5 +1,9 @@
 <script setup lang="ts">
-import type { Request } from "@/utils/types/form-request";
+import type {
+  Request,
+  RequestDateField,
+  RequestTextField,
+} from "@/utils/types/form-request";
 import { toRaw, watchEffect } from "vue";
 
 const { request } = defineProps<{
@@ -14,13 +18,17 @@ watchEffect(() => console.log(toRaw(request)));
   <div class="request">
     <div>
       <p>
-        {{ [...request.fields.values()][0].value }}
+        {{ ([...request.fields.values()][0] as RequestTextField).value }}
       </p>
       <p>
-        {{ [...request.fields.values()][1].value }}
+        {{ ([...request.fields.values()][1] as RequestTextField).value }}
       </p>
       <p>
-        {{ new Date([...request.fields.values()][2].value || "") }}
+        {{
+          new Date(
+            ([...request.fields.values()][2] as RequestDateField).value || ""
+          )
+        }}
       </p>
     </div>
 

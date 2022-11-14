@@ -57,6 +57,9 @@ type RawRequest = { _id: string; fields: RawRequestFields };
 type RawRequests = RawRequest[];
 
 export type {
+  RequestTextField,
+  RequestOptionsField,
+  RequestDateField,
   RequestOptionField,
   RequestOptions,
   RequestField,

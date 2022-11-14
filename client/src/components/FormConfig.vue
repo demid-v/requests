@@ -5,12 +5,17 @@ import {
   getRandomUuid,
   transformFieldsToMap,
   isOptionsType,
+  isTextType,
+  isDateType,
 } from "@/utils/funtions";
 import type {
+  DateField,
   Fields,
   FieldType,
   Options,
+  OptionsField,
   RawFields,
+  TextField,
 } from "@/utils/types/form-structure";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
@@ -33,16 +38,33 @@ function getFormStructure() {
 
 watchEffect(getFormStructure);
 
+function createField(type: FieldType, name?: string, description?: string) {
+  const descriptionTrimmed = description?.trim();
+
+  const field = {
+    type: type,
+    name: name?.trim() || "",
+    ...(descriptionTrimmed && { description: descriptionTrimmed }),
+  };
+
+  if (isTextType(type)) {
+    return field as TextField;
+  } else if (isDateType(type)) {
+    return field as DateField;
+  } else if (isOptionsType(type)) {
+    (field as OptionsField).options = new Map([
+      [getRandomUuid(), { name: "" }],
+    ]);
+
+    return field as OptionsField;
+  } else throw new TypeError("Unknown field type");
+}
+
 function addField(event: Event) {
   const fieldType = (event.target as HTMLSelectElement).value as FieldType;
 
-  formStructure.value.set(getRandomUuid(), {
-    type: fieldType,
-    name: "",
-    ...(isOptionsType(fieldType) && {
-      options: new Map([[getRandomUuid(), { name: "" }]]),
-    }),
-  });
+  const field = createField(fieldType);
+  formStructure.value.set(getRandomUuid(), field);
 
   (event.target as HTMLSelectElement).value = "";
 }
@@ -51,16 +73,8 @@ function changeFieldType(event: Event, id: string) {
   const fieldType = (event.target as HTMLSelectElement).value as FieldType;
   const field = formStructure.value.get(id);
 
-  if (field) {
-    formStructure.value.set(id, {
-      type: fieldType,
-      name: field.name || "",
-      description: field.description || "",
-      ...(isOptionsType(fieldType) && {
-        options: new Map([[getRandomUuid(), { name: "" }]]),
-      }),
-    });
-  }
+  const newField = createField(fieldType, field?.name, field?.description);
+  formStructure.value.set(id, newField);
 }
 
 function deleteField(list: Fields | Options, id: string) {
