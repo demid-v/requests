@@ -23,8 +23,6 @@ const formStructure: Ref<Fields> = ref(new Map());
 
 watch(formStructure, (formStructure) => console.log(toRaw(formStructure)));
 
-const form = ref();
-
 function getFormStructure() {
   fetch("http://localhost:5501/form-structure", {
     method: "GET",
@@ -165,7 +163,7 @@ function sendObject(fieldsPrepared: any) {
 </script>
 
 <template>
-  <form ref="form" @submit.prevent="submitForm()">
+  <form @submit.prevent="submitForm()">
     <fieldset>
       <legend>Form structure</legend>
 
