@@ -19,6 +19,7 @@ import type {
 } from "@/utils/types/form-structure";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
+let formStructureOld: Readonly<Fields> = new Map();
 const formStructure: Ref<Fields> = ref(new Map());
 
 watch(formStructure, (formStructure) => console.log(toRaw(formStructure)));
@@ -31,6 +32,9 @@ function getFormStructure() {
     console.log("form-structure:", data);
 
     formStructure.value = transformFieldsToMap(data);
+    formStructureOld = Object.freeze(
+      structuredClone(formStructure.value) as Fields
+    );
   });
 }
 
@@ -40,7 +44,7 @@ function createField(type: FieldType, name?: string, description?: string) {
   const descriptionTrimmed = description?.trim();
 
   const field = {
-    type: type,
+    type,
     name: name?.trim() || "",
     ...(descriptionTrimmed && { description: descriptionTrimmed }),
   };
@@ -55,7 +59,9 @@ function createField(type: FieldType, name?: string, description?: string) {
     ]);
 
     return field as OptionsField;
-  } else throw new TypeError("Unknown field type");
+  } else {
+    throw new TypeError("Unknown field type");
+  }
 }
 
 function addField(event: Event) {
