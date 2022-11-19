@@ -9,18 +9,24 @@ import {
   isDateType,
 } from "@/utils/funtions";
 import type {
+  ChangedFields,
   DateField,
+  Field,
   Fields,
   FieldType,
   Options,
+  OptionField,
   OptionsField,
   RawFields,
   TextField,
 } from "@/utils/types/form-structure";
+import { RELATIVE_FIELD_TYPES } from "@/utils/globals";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
-let formStructureOld: Readonly<Fields> = new Map();
+const formStructureOld: Ref<Fields> = ref(new Map());
 const formStructure: Ref<Fields> = ref(new Map());
+
+const changedFields: Ref<ChangedFields> = ref(new Map());
 
 watch(formStructure, (formStructure) => console.log(toRaw(formStructure)));
 
@@ -32,20 +38,20 @@ function getFormStructure() {
     console.log("form-structure:", data);
 
     formStructure.value = transformFieldsToMap(data);
-    formStructureOld = Object.freeze(
-      structuredClone(formStructure.value) as Fields
-    );
+    formStructureOld.value = Object.freeze(new Map(formStructure.value));
   });
 }
 
 watchEffect(getFormStructure);
 
-function createField(type: FieldType, name?: string, description?: string) {
-  const descriptionTrimmed = description?.trim();
+function createField(type: FieldType, fieldIn?: Field) {
+  const descriptionTrimmed = fieldIn?.description?.trim();
+  const _id = fieldIn?._id;
 
   const field = {
+    ...(_id && { _id }),
     type,
-    name: name?.trim() || "",
+    name: fieldIn?.name?.trim() || "",
     ...(descriptionTrimmed && { description: descriptionTrimmed }),
   };
 
@@ -70,19 +76,39 @@ function addField(event: Event) {
   const field = createField(fieldType);
   formStructure.value.set(getRandomUuid(), field);
 
+  changedFields.value.set(field, "post");
+
   (event.target as HTMLSelectElement).value = "";
+}
+
+function getOperation(field: Field, newFieldType: FieldType) {
+  if (changedFields.value.get(field) === "post") {
+    return "post";
+  } else if (RELATIVE_FIELD_TYPES[field.type]?.includes(newFieldType)) {
+    return "patch";
+  } else {
+    return "put";
+  }
 }
 
 function changeFieldType(event: Event, id: string) {
   const fieldType = (event.target as HTMLSelectElement).value as FieldType;
-  const field = formStructure.value.get(id);
+  const field = formStructure.value.get(id) as Field;
 
-  const newField = createField(fieldType, field?.name, field?.description);
+  const newField = createField(fieldType, field);
   formStructure.value.set(id, newField);
+
+  changedFields.value.delete(field);
+  changedFields.value.set(newField, getOperation(field, fieldType));
 }
 
-function deleteField(list: Fields | Options, id: string) {
-  list.delete(id);
+function deleteField(fields: Fields, id: string) {
+  changedFields.value.delete(fields.get(id) as Field);
+  fields.delete(id);
+}
+
+function deleteOption(options: Options, id: string) {
+  options.delete(id);
 }
 
 function addOption(options: Options) {
@@ -99,14 +125,12 @@ function setDefaultOption(event: Event, options: Options, inId: string) {
   }
 
   const optionValue = (event.target as HTMLInputElement).checked;
-  const option = options.get(inId);
+  const option = options.get(inId) as OptionField;
 
-  if (option) {
-    if (optionValue) {
-      option.isDefault = true;
-    } else {
-      delete option.isDefault;
-    }
+  if (optionValue) {
+    option.isDefault = true;
+  } else {
+    delete option.isDefault;
   }
 }
 
@@ -114,6 +138,7 @@ function submitForm() {
   const fieldsPrepared = prepareObject();
 
   console.log(fieldsPrepared);
+  console.log(toRaw(changedFields.value));
 
   // sendObject(fieldsPrepared);
 }
@@ -241,7 +266,7 @@ function sendObject(fieldsPrepared: any) {
             <button
               v-if="field.options.size !== 1"
               type="button"
-              @click="deleteField(field.options, id)"
+              @click="deleteOption(field.options, id)"
             >
               Delete</button
             ><br />

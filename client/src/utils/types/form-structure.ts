@@ -57,6 +57,12 @@ type RawField = RawTextField | RawOptionsField | RawDateField;
 
 type RawFields = RawField[];
 
+type Operation = "post" | "patch" | "put";
+
+type ChangedFields = Map<Field, Operation>;
+
+type RelativeFieldTypes = Readonly<{ [key: string]: string[] }>;
+
 export type {
   GenericField,
   TextType,
@@ -73,4 +79,7 @@ export type {
   RawGenericField,
   RawField,
   RawFields,
+  Operation,
+  ChangedFields,
+  RelativeFieldTypes,
 };
