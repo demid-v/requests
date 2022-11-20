@@ -14,5 +14,6 @@ export default defineConfig({
   cacheDir: "../node_modules/.vite",
   build: {
     outDir: "../dist/client",
+    target: "es2015",
   },
 });
