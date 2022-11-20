@@ -6,6 +6,6 @@
     "build": "npx tsc",
     "launch": "node ../dist/server/index.js",
     "build:dev": "npx tsc --watch --preserveWatchOutput",
-    "launch:dev": "nodemon ../dist/server/index.js"
+    "launch:dev": "nodemon --watch ../dist/server ../dist/server/index.js"
   }
 }
