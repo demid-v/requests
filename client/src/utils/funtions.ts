@@ -51,7 +51,6 @@ function transformFieldsToMap(fields: RawFields | RawRequestFields) {
       const options = new Map();
 
       field.options.forEach((option) => options.set(getRandomUuid(), option));
-
       field.options = options;
     }
 

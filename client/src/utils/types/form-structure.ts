@@ -14,6 +14,7 @@ type CommonFieldBody = {
 
 type GenericField = CommonFieldBody & {
   _id?: string;
+  index?: number;
 };
 
 type TextField = GenericField & {
@@ -57,7 +58,7 @@ type RawField = RawTextField | RawOptionsField | RawDateField;
 
 type RawFields = RawField[];
 
-type Operation = "post" | "patch" | "put";
+type Operation = "create" | "update";
 
 type ChangedFields = Map<Field, Operation>;
 

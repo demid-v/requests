@@ -9,8 +9,22 @@ function setFormStructureRoutes(app: Express, requestsDb: RequestsDb) {
   });
 
   app.post("/form-structure", async (req: Request, res: Response) => {
-    console.log(req.body);
-    const data = await requestsDb.postFormStructure(req.body);
+    const fields = req.body;
+    console.log(fields);
+
+    const promises: Promise<any>[] = [];
+
+    fields.forEach((field: any) => {
+      if (field[1] === "create") {
+        promises.push(requestsDb.createFormStructure(field[0]));
+      } else if (field[1] === "update") {
+        promises.push(requestsDb.updateFormStructure(field[0]));
+      } else {
+        throw new Error("Unknown request type.");
+      }
+    });
+
+    const data = await Promise.all(promises);
 
     res.send(data);
   });

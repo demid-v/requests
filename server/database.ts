@@ -50,10 +50,17 @@ class RequestsDb {
     return data;
   }
 
-  async postFormStructure(obj: any) {
-    await this.collectionFormStructure.deleteMany({});
-
+  async createFormStructure(obj: any) {
     const data = await this.collectionFormStructure.create(obj);
+
+    return data;
+  }
+
+  async updateFormStructure(obj: any) {
+    const data = await this.collectionFormStructure.updateOne(
+      { _id: obj._id },
+      { $set: obj }
+    );
 
     return data;
   }

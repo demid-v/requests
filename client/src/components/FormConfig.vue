@@ -17,10 +17,8 @@ import type {
   Options,
   OptionField,
   OptionsField,
-  RawFields,
   TextField,
 } from "@/utils/types/form-structure";
-import { RELATIVE_FIELD_TYPES } from "@/utils/globals";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
 const formStructureOld: Ref<Fields> = ref(new Map());
@@ -38,21 +36,33 @@ function getFormStructure() {
     console.log("form-structure:", data);
 
     formStructure.value = transformFieldsToMap(data);
-    formStructureOld.value = Object.freeze(new Map(formStructure.value));
+    formStructureOld.value = Object.freeze(
+      structuredClone(toRaw(formStructure.value))
+    );
   });
 }
 
 watchEffect(getFormStructure);
 
-function createField(type: FieldType, fieldIn?: Field) {
-  const descriptionTrimmed = fieldIn?.description?.trim();
-  const _id = fieldIn?._id;
+function addField(event: Event) {
+  const fieldType = (event.target as HTMLSelectElement).value as FieldType;
 
+  const field = createField(fieldType);
+  formStructure.value.set(getRandomUuid(), field);
+
+  changedFields.value.set(field, "create");
+
+  (event.target as HTMLSelectElement).value = "";
+}
+
+function createField(type: FieldType, fieldIn?: Field) {
   const field = {
-    ...(_id && { _id }),
+    ...(fieldIn
+      ? createDefaultField(fieldIn)
+      : {
+          name: "",
+        }),
     type,
-    name: fieldIn?.name?.trim() || "",
-    ...(descriptionTrimmed && { description: descriptionTrimmed }),
   };
 
   if (isTextType(type)) {
@@ -70,24 +80,25 @@ function createField(type: FieldType, fieldIn?: Field) {
   }
 }
 
-function addField(event: Event) {
-  const fieldType = (event.target as HTMLSelectElement).value as FieldType;
+function createDefaultField(fieldIn: Field) {
+  const { _id, name, description, isRequired } = fieldIn;
+  const descriptionTrimmed = description?.trim();
 
-  const field = createField(fieldType);
-  formStructure.value.set(getRandomUuid(), field);
+  const field = {
+    ...(_id && { _id }),
+    name: name?.trim() || "",
+    ...(descriptionTrimmed && { description: descriptionTrimmed }),
+    ...(isRequired && { isRequired }),
+  };
 
-  changedFields.value.set(field, "post");
-
-  (event.target as HTMLSelectElement).value = "";
+  return field;
 }
 
-function getOperation(field: Field, newFieldType: FieldType) {
-  if (changedFields.value.get(field) === "post") {
-    return "post";
-  } else if (RELATIVE_FIELD_TYPES[field.type]?.includes(newFieldType)) {
-    return "patch";
+function getOperation(field: Field) {
+  if (changedFields.value.get(field) === "create") {
+    return "create";
   } else {
-    return "put";
+    return "update";
   }
 }
 
@@ -99,7 +110,7 @@ function changeFieldType(event: Event, id: string) {
   formStructure.value.set(id, newField);
 
   changedFields.value.delete(field);
-  changedFields.value.set(newField, getOperation(field, fieldType));
+  changedFields.value.set(newField, getOperation(field));
 }
 
 function deleteField(fields: Fields, id: string) {
@@ -134,41 +145,48 @@ function setDefaultOption(event: Event, options: Options, inId: string) {
   }
 }
 
-function submitForm() {
-  const fieldsPrepared = prepareObject();
+function configureForm() {
+  for (const field of formStructure.value.values()) {
+    wipeBlankInputs(field);
 
-  console.log(fieldsPrepared);
-  console.log(toRaw(changedFields.value));
-
-  // sendObject(fieldsPrepared);
-}
-
-function wipeBlankInputs() {
-  for (const [_id, field] of formStructure.value) {
-    field.name = field.name.trim();
-
-    if ((field.description = field.description?.trim()) === "") {
-      delete field.description;
-    }
-
-    if (isTextField(field)) {
-      if ((field.defaultValue = field.defaultValue?.trim()) === "") {
-        delete field.defaultValue;
-      }
-    }
-
-    if (isOptionsField(field)) {
-      for (const [_id, option] of field.options) {
-        option.name = option.name.trim();
-      }
+    if (field._id !== undefined) {
+      checkForChangedInputs(field, field._id);
     }
   }
 }
 
-function prepareObject() {
-  const fieldsPrepared = (
-    structuredClone([...toRaw(formStructure.value).values()]) as RawFields
-  ).map((field, index) => {
+function wipeBlankInputs(field: Field) {
+  field.name = field.name.trim();
+
+  if ((field.description = field.description?.trim()) === "") {
+    delete field.description;
+  }
+
+  if (isTextField(field)) {
+    if ((field.defaultValue = field.defaultValue?.trim()) === "") {
+      delete field.defaultValue;
+    }
+  }
+
+  if (isOptionsField(field)) {
+    for (const [_id, option] of field.options) {
+      option.name = option.name.trim();
+    }
+  }
+}
+
+function checkForChangedInputs(field: Field, id: string) {
+  console.log(toRaw(field));
+  console.log(toRaw(formStructureOld.value.get(id)));
+}
+
+function submitForm() {
+  prepareFields();
+  sendChangedFields();
+}
+
+function prepareFields() {
+  [...formStructure.value.values()].map((field, index) => {
     field.index = index + 1;
 
     if (isOptionsField(field)) {
@@ -177,18 +195,18 @@ function prepareObject() {
 
     return field;
   });
-
-  return fieldsPrepared;
 }
 
-function sendObject(fieldsPrepared: any) {
+function sendChangedFields() {
   fetch("http://localhost:5501/form-structure", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(fieldsPrepared),
+    body: JSON.stringify([...toRaw(changedFields.value).entries()]),
   }).then(async (resp) => {
     const data = await resp.json();
     console.log("resp:", data);
+
+    getFormStructure();
   });
 }
 </script>
@@ -296,7 +314,7 @@ function sendObject(fieldsPrepared: any) {
         <option value="datetime-local">Date and time</option></select
       ><br />
 
-      <input type="submit" value="Confirm" @click="wipeBlankInputs()" />
+      <input type="submit" value="Confirm" @click="configureForm()" />
     </fieldset>
   </form>
 </template>
