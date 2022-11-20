@@ -1,7 +1,9 @@
 {
   "scripts": {
-    "dev": "vite",
+    "start:dev": "vite",
+    "start:prod": "npm run build && npm run serve",
     "build": "run-p type-check build-only",
+    "serve": "serve -s ../dist/client",
     "preview": "vite preview --port 4173",
     "build-only": "vite build",
     "type-check": "vue-tsc --noEmit"
