@@ -11,7 +11,7 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
-  publicDir: "../node_modules/.vite",
+  cacheDir: "../node_modules/.vite",
   build: {
     outDir: "../dist/client",
   },
