@@ -9,12 +9,17 @@ import type {
   OptionsField,
   DateField,
   FieldType,
+  RawOptionsField,
+  RawField,
+  RawDateField,
+  RawTextField,
 } from "@/utils/types/form-structure";
 import type {
   RequestFields,
   Requests,
   RawRequestFields,
   RawRequests,
+  RawRequestField,
 } from "@/utils/types/form-request";
 
 function isTextType(type: FieldType): type is TextType {
@@ -41,20 +46,36 @@ function isDateField(field: Field): field is DateField {
   return isDateType(field.type);
 }
 
+function isRawTextField(field: RawField): field is RawTextField {
+  return isTextType(field.type);
+}
+
+function isRawOptionsField(
+  field: RawField | RawRequestField
+): field is RawOptionsField {
+  return isOptionsType(field.type);
+}
+
+function isRawDateField(field: RawField): field is RawDateField {
+  return isDateType(field.type);
+}
+
 const getRandomUuid = () => crypto.randomUUID();
 
 function transformFieldsToMap(fields: RawFields | RawRequestFields) {
-  const fieldsMap: Fields = new Map();
+  const fieldsMap = new Map();
 
   fields.forEach((field) => {
-    if (isOptionsField(field)) {
+    let newField = structuredClone(field);
+
+    if (isRawOptionsField(field)) {
       const options = new Map();
 
       field.options.forEach((option) => options.set(getRandomUuid(), option));
-      field.options = options;
+      newField.options = options;
     }
 
-    fieldsMap.set(field._id, field);
+    fieldsMap.set(field._id, newField);
   });
 
   return fieldsMap;
@@ -66,9 +87,9 @@ function transformFieldsToMapForRequestForm(fields: RawFields) {
   fields.forEach((field) => {
     const transformedField = structuredClone(field);
 
-    if (isTextField(field)) {
+    if (isRawTextField(field)) {
       transformedField.value = field.defaultValue;
-    } else if (isOptionsField(field)) {
+    } else if (isRawOptionsField(field)) {
       transformedField.options = new Map();
 
       field.options.forEach((option) => {
@@ -107,6 +128,7 @@ export {
   isTextField,
   isOptionsField,
   isDateField,
+  isRawOptionsField,
   getRandomUuid,
   transformFieldsToMap,
   transformFieldsToMapForRequestForm,

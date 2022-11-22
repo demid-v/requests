@@ -45,22 +45,29 @@ class RequestsDb {
   }
 
   async getFormStructure() {
-    const data = await this.collectionFormStructure.find({}).sort("index");
+    const data = await this.collectionFormStructure.find().sort("index");
 
     return data;
   }
 
-  async createFormStructure(obj: any) {
+  async postFormStructure(obj: any) {
     const data = await this.collectionFormStructure.create(obj);
 
     return data;
   }
 
-  async updateFormStructure(obj: any) {
+  async patchFormStructure(obj: any) {
     const data = await this.collectionFormStructure.updateOne(
       { _id: obj._id },
       { $set: obj }
     );
+
+    return data;
+  }
+
+  async putFormStructure(obj: any) {
+    await this.collectionFormStructure.delete(obj._id);
+    const data = await this.collectionFormStructure.create(obj);
 
     return data;
   }

@@ -18,6 +18,8 @@ import type {
   OptionField,
   OptionsField,
   TextField,
+  RelativeFieldTypes,
+  UnwrappedField,
 } from "@/utils/types/form-structure";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
@@ -25,6 +27,13 @@ const formStructureOld: Ref<Fields> = ref(new Map());
 const formStructure: Ref<Fields> = ref(new Map());
 
 const changedFields: Ref<ChangedFields> = ref(new Map());
+
+const RELATIVE_FIELD_TYPES: RelativeFieldTypes = Object.freeze({
+  text: ["multiline"],
+  multiline: ["text"],
+  checkbox: ["select"],
+  select: ["checkbox"],
+});
 
 watch(formStructure, (formStructure) => console.log(toRaw(formStructure)));
 
@@ -50,7 +59,7 @@ function addField(event: Event) {
   const field = createField(fieldType);
   formStructure.value.set(getRandomUuid(), field);
 
-  changedFields.value.set(field, "create");
+  changedFields.value.set(field, "post");
 
   (event.target as HTMLSelectElement).value = "";
 }
@@ -94,11 +103,13 @@ function createDefaultField(fieldIn: Field) {
   return field;
 }
 
-function getOperation(field: Field) {
-  if (changedFields.value.get(field) === "create") {
-    return "create";
+function getOperation(field: Field, newFieldType: FieldType) {
+  if (changedFields.value.get(field) === "post") {
+    return "post";
+  } else if (RELATIVE_FIELD_TYPES[field.type].includes(newFieldType)) {
+    return "patch";
   } else {
-    return "update";
+    return "put";
   }
 }
 
@@ -109,8 +120,9 @@ function changeFieldType(event: Event, id: string) {
   const newField = createField(fieldType, field);
   formStructure.value.set(id, newField);
 
+  const operation = getOperation(field, fieldType);
   changedFields.value.delete(field);
-  changedFields.value.set(newField, getOperation(field));
+  changedFields.value.set(newField, operation);
 }
 
 function deleteField(fields: Fields, id: string) {
@@ -158,12 +170,14 @@ function configureForm() {
 function wipeBlankInputs(field: Field) {
   field.name = field.name.trim();
 
-  if ((field.description = field.description?.trim()) === "") {
+  field.description = field.description?.trim();
+  if (field.description === "" || field.description === undefined) {
     delete field.description;
   }
 
   if (isTextField(field)) {
-    if ((field.defaultValue = field.defaultValue?.trim()) === "") {
+    field.defaultValue = field.defaultValue?.trim();
+    if (field.defaultValue === "" || field.defaultValue === undefined) {
       delete field.defaultValue;
     }
   }
@@ -176,24 +190,29 @@ function wipeBlankInputs(field: Field) {
 }
 
 function checkForChangedInputs(field: Field, id: string) {
-  console.log(toRaw(field));
-  console.log(toRaw(formStructureOld.value.get(id)));
+  // console.log(toRaw(field));
+  // console.log(toRaw(formStructureOld.value.get(id)));
 }
 
 function submitForm() {
-  prepareFields();
-  sendChangedFields();
+  const unwrappedChangedFields = prepareFields();
+  console.log(unwrappedChangedFields);
+
+  // sendChangedFields();
 }
 
 function prepareFields() {
-  [...formStructure.value.values()].map((field, index) => {
+  return [...changedFields.value.keys()].map((field, index) => {
     field.index = index + 1;
 
     if (isOptionsField(field)) {
-      return { ...field, options: [...field.options.values()] };
+      return {
+        ...field,
+        options: [...field.options.values()],
+      };
     }
 
-    return field;
+    return field as UnwrappedField;
   });
 }
 

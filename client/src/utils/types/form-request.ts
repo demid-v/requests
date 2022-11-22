@@ -38,9 +38,11 @@ type RawRequestTextField = RawGenericField & {
   value?: string;
 };
 
+type RawRequestOptions = RequestOptionField[];
+
 type RawRequestOptionsField = RawGenericField & {
   type: OptionsType;
-  options: RequestOptions;
+  options: RawRequestOptions;
 };
 
 type RawRequestDateField = RawGenericField & { type: DateType };
@@ -66,6 +68,7 @@ export type {
   RequestFields,
   Request,
   Requests,
+  RawRequestField,
   RawRequestFields,
   RawRequests,
 };

@@ -47,9 +47,11 @@ type RawTextField = RawGenericField & {
   defaultValue?: string;
 };
 
+type RawOptions = OptionField[];
+
 type RawOptionsField = RawGenericField & {
   type: OptionsType;
-  options: Options;
+  options: RawOptions;
 };
 
 type RawDateField = RawGenericField & { type: DateType };
@@ -58,9 +60,20 @@ type RawField = RawTextField | RawOptionsField | RawDateField;
 
 type RawFields = RawField[];
 
-type Operation = "create" | "update";
+type Operation = "post" | "patch" | "put";
 
 type ChangedFields = Map<Field, Operation>;
+
+type UnwrappedOptions = OptionField[];
+
+type UnwrappedOptionsField = GenericField & {
+  type: OptionsType;
+  options: UnwrappedOptions;
+};
+
+type UnwrappedField = TextField | UnwrappedOptionsField | DateField;
+
+type UnwrappedChangedFields = Map<UnwrappedField, Operation>;
 
 type RelativeFieldTypes = Readonly<{ [key: string]: string[] }>;
 
@@ -78,9 +91,14 @@ export type {
   Field,
   Fields,
   RawGenericField,
+  RawTextField,
+  RawOptionsField,
+  RawDateField,
   RawField,
   RawFields,
   Operation,
   ChangedFields,
+  UnwrappedField,
+  UnwrappedChangedFields,
   RelativeFieldTypes,
 };

@@ -15,10 +15,12 @@ function setFormStructureRoutes(app: Express, requestsDb: RequestsDb) {
     const promises: Promise<any>[] = [];
 
     fields.forEach((field: any) => {
-      if (field[1] === "create") {
-        promises.push(requestsDb.createFormStructure(field[0]));
-      } else if (field[1] === "update") {
-        promises.push(requestsDb.updateFormStructure(field[0]));
+      if (field[1] === "post") {
+        promises.push(requestsDb.postFormStructure(field[0]));
+      } else if (field[1] === "patch") {
+        promises.push(requestsDb.patchFormStructure(field[0]));
+      } else if (field[1] === "put") {
+        promises.push(requestsDb.putFormStructure(field[0]));
       } else {
         throw new Error("Unknown request type.");
       }
