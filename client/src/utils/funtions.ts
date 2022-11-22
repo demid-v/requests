@@ -1,6 +1,5 @@
 import type {
   DateType,
-  Fields,
   Field,
   OptionsType,
   RawFields,
@@ -15,7 +14,6 @@ import type {
   RawTextField,
 } from "@/utils/types/form-structure";
 import type {
-  RequestFields,
   Requests,
   RawRequestFields,
   RawRequests,
@@ -66,7 +64,7 @@ function transformFieldsToMap(fields: RawFields | RawRequestFields) {
   const fieldsMap = new Map();
 
   fields.forEach((field) => {
-    let newField = structuredClone(field);
+    const newField = structuredClone(field);
 
     if (isRawOptionsField(field)) {
       const options = new Map();
@@ -82,7 +80,7 @@ function transformFieldsToMap(fields: RawFields | RawRequestFields) {
 }
 
 function transformFieldsToMapForRequestForm(fields: RawFields) {
-  const fieldsMap: RequestFields = new Map();
+  const fieldsMap = new Map();
 
   fields.forEach((field) => {
     const transformedField = structuredClone(field);

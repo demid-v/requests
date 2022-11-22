@@ -19,7 +19,7 @@ import type {
   OptionsField,
   TextField,
   RelativeFieldTypes,
-  UnwrappedField,
+  UnwrappedChangedFields,
 } from "@/utils/types/form-structure";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
@@ -198,29 +198,33 @@ function submitForm() {
   const unwrappedChangedFields = prepareFields();
   console.log(unwrappedChangedFields);
 
-  // sendChangedFields();
+  sendChangedFields(unwrappedChangedFields);
 }
 
 function prepareFields() {
-  return [...changedFields.value.keys()].map((field, index) => {
-    field.index = index + 1;
+  const unwrappedChangedFields: UnwrappedChangedFields = new Map();
+
+  for (const [index, [field, operation]] of [
+    ...toRaw(changedFields.value).entries(),
+  ].entries()) {
+    const unwrappedChangedField = structuredClone(field);
+    unwrappedChangedField.index = index + 1;
 
     if (isOptionsField(field)) {
-      return {
-        ...field,
-        options: [...field.options.values()],
-      };
+      unwrappedChangedField.options = [...field.options.values()];
     }
 
-    return field as UnwrappedField;
-  });
+    unwrappedChangedFields.set(unwrappedChangedField, operation);
+  }
+
+  return unwrappedChangedFields;
 }
 
-function sendChangedFields() {
+function sendChangedFields(unwrappedChangedFields: UnwrappedChangedFields) {
   fetch("http://localhost:5501/form-structure", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify([...toRaw(changedFields.value).entries()]),
+    body: JSON.stringify([...unwrappedChangedFields.entries()]),
   }).then(async (resp) => {
     const data = await resp.json();
     console.log("resp:", data);

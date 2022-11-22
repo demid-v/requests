@@ -66,7 +66,7 @@ class RequestsDb {
   }
 
   async putFormStructure(obj: any) {
-    await this.collectionFormStructure.delete(obj._id);
+    await this.collectionFormStructure.deleteOne({ _id: obj._id });
     const data = await this.collectionFormStructure.create(obj);
 
     return data;
