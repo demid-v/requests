@@ -60,7 +60,7 @@ type RawField = RawTextField | RawOptionsField | RawDateField;
 
 type RawFields = RawField[];
 
-type Operation = "post" | "patch" | "put";
+type Operation = "post" | "patch" | "put" | "delete";
 
 type ChangedFields = Map<Field, Operation>;
 
@@ -73,7 +73,7 @@ type UnwrappedOptionsField = GenericField & {
 
 type UnwrappedField = TextField | UnwrappedOptionsField | DateField;
 
-type UnwrappedChangedFields = Map<UnwrappedField, Operation>;
+type UnwrappedChangedFields = Map<UnwrappedField | string, Operation>;
 
 type RelativeFieldTypes = Readonly<{ [key: string]: string[] }>;
 

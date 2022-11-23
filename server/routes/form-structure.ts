@@ -21,6 +21,8 @@ function setFormStructureRoutes(app: Express, requestsDb: RequestsDb) {
         promises.push(requestsDb.patchFormStructure(field[0]));
       } else if (field[1] === "put") {
         promises.push(requestsDb.putFormStructure(field[0]));
+      } else if (field[1] === "delete") {
+        promises.push(requestsDb.deleteFormStructure(field[0]));
       } else {
         throw new Error("Unknown request type.");
       }

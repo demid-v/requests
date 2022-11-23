@@ -23,7 +23,7 @@ import type {
 } from "@/utils/types/form-structure";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
-const formStructureOld: Ref<Fields> = ref(new Map());
+const originalFormStructure: Ref<Fields> = ref(new Map());
 const formStructure: Ref<Fields> = ref(new Map());
 
 const changedFields: Ref<ChangedFields> = ref(new Map());
@@ -45,7 +45,7 @@ function getFormStructure() {
     console.log("form-structure:", data);
 
     formStructure.value = transformFieldsToMap(data);
-    formStructureOld.value = Object.freeze(
+    originalFormStructure.value = Object.freeze(
       structuredClone(toRaw(formStructure.value))
     );
   });
@@ -106,7 +106,7 @@ function createDefaultField(fieldIn: Field) {
 function getOperation(field: Field, newFieldType: FieldType) {
   if (changedFields.value.get(field) === "post") {
     return "post";
-  } else if (RELATIVE_FIELD_TYPES[field.type].includes(newFieldType)) {
+  } else if (RELATIVE_FIELD_TYPES[field.type]?.includes(newFieldType)) {
     return "patch";
   } else {
     return "put";
@@ -125,9 +125,16 @@ function changeFieldType(event: Event, id: string) {
   changedFields.value.set(newField, operation);
 }
 
-function deleteField(fields: Fields, id: string) {
-  changedFields.value.delete(fields.get(id) as Field);
-  fields.delete(id);
+function deleteField(id: string) {
+  const fieldToDelete = formStructure.value.get(id) as Field;
+  formStructure.value.delete(id);
+
+  const originalFieldToDelete = originalFormStructure.value.get(id);
+  if (originalFieldToDelete !== undefined) {
+    changedFields.value.set(originalFieldToDelete, "delete");
+  } else {
+    changedFields.value.delete(fieldToDelete);
+  }
 }
 
 function deleteOption(options: Options, id: string) {
@@ -158,27 +165,28 @@ function setDefaultOption(event: Event, options: Options, inId: string) {
 }
 
 function configureForm() {
-  for (const field of formStructure.value.values()) {
-    wipeBlankInputs(field);
+  for (const [index, field] of [...formStructure.value.values()].entries()) {
+    field.index = index + 1;
 
-    if (field._id !== undefined) {
-      checkForChangedInputs(field, field._id);
-    }
+    wipeBlankInputs(field);
+    checkForChangedInputs(field, field._id);
   }
 }
 
 function wipeBlankInputs(field: Field) {
   field.name = field.name.trim();
 
-  field.description = field.description?.trim();
-  if (field.description === "" || field.description === undefined) {
-    delete field.description;
+  if ("description" in field) {
+    if ((field.description = field.description?.trim()) === "") {
+      delete field.description;
+    }
   }
 
   if (isTextField(field)) {
-    field.defaultValue = field.defaultValue?.trim();
-    if (field.defaultValue === "" || field.defaultValue === undefined) {
-      delete field.defaultValue;
+    if ("defaultValue" in field) {
+      if ((field.defaultValue = field.defaultValue?.trim()) === "") {
+        delete field.defaultValue;
+      }
     }
   }
 
@@ -189,9 +197,20 @@ function wipeBlankInputs(field: Field) {
   }
 }
 
-function checkForChangedInputs(field: Field, id: string) {
-  // console.log(toRaw(field));
-  // console.log(toRaw(formStructureOld.value.get(id)));
+function checkForChangedInputs(field: Field, id: string | undefined) {
+  const changedFieldOperation = changedFields.value.get(field);
+
+  if (
+    id !== undefined &&
+    changedFieldOperation === undefined &&
+    changedFieldOperation !== "create"
+  ) {
+    const originalField = originalFormStructure.value.get(id) as Field;
+
+    if (JSON.stringify(originalField) !== JSON.stringify(field)) {
+      changedFields.value.set(field, "patch");
+    }
+  }
 }
 
 function submitForm() {
@@ -204,11 +223,8 @@ function submitForm() {
 function prepareFields() {
   const unwrappedChangedFields: UnwrappedChangedFields = new Map();
 
-  for (const [index, [field, operation]] of [
-    ...toRaw(changedFields.value).entries(),
-  ].entries()) {
-    const unwrappedChangedField = structuredClone(field);
-    unwrappedChangedField.index = index + 1;
+  for (const [field, operation] of changedFields.value.entries()) {
+    const unwrappedChangedField = structuredClone(toRaw(field));
 
     if (isOptionsField(field)) {
       unwrappedChangedField.options = [...field.options.values()];
@@ -240,9 +256,7 @@ function sendChangedFields(unwrappedChangedFields: UnwrappedChangedFields) {
       <legend>Form structure</legend>
 
       <fieldset v-for="[id, field] in formStructure" :key="id">
-        <button type="button" @click="deleteField(formStructure, id)">
-          Delete</button
-        ><br />
+        <button type="button" @click="deleteField(id)">Delete</button><br />
 
         <label :for="'field-type-' + id">Field type</label><br />
         <select

@@ -71,6 +71,12 @@ class RequestsDb {
 
     return data;
   }
+
+  async deleteFormStructure(obj: any) {
+    const data = await this.collectionFormStructure.deleteOne({ _id: obj._id });
+
+    return data;
+  }
 }
 
 export default RequestsDb;

@@ -10,7 +10,6 @@ import type {
   FieldType,
   RawOptionsField,
   RawField,
-  RawDateField,
   RawTextField,
 } from "@/utils/types/form-structure";
 import type {
@@ -52,10 +51,6 @@ function isRawOptionsField(
   field: RawField | RawRequestField
 ): field is RawOptionsField {
   return isOptionsType(field.type);
-}
-
-function isRawDateField(field: RawField): field is RawDateField {
-  return isDateType(field.type);
 }
 
 const getRandomUuid = () => crypto.randomUUID();
