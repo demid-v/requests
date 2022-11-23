@@ -20,6 +20,7 @@ import type {
   TextField,
   RelativeFieldTypes,
   UnwrappedChangedFields,
+  UnwrappedField,
 } from "@/utils/types/form-structure";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
@@ -169,7 +170,7 @@ function configureForm() {
     field.index = index + 1;
 
     wipeBlankInputs(field);
-    checkForChangedInputs(field, field._id);
+    checkForChangedInputs(field);
   }
 }
 
@@ -197,18 +198,47 @@ function wipeBlankInputs(field: Field) {
   }
 }
 
-function checkForChangedInputs(field: Field, id: string | undefined) {
+function checkForChangedInputs(field: Field) {
   const changedFieldOperation = changedFields.value.get(field);
 
   if (
-    id !== undefined &&
+    field._id !== undefined &&
     changedFieldOperation === undefined &&
     changedFieldOperation !== "create"
   ) {
-    const originalField = originalFormStructure.value.get(id) as Field;
+    const originalField = originalFormStructure.value.get(field._id);
 
-    if (JSON.stringify(originalField) !== JSON.stringify(field)) {
-      changedFields.value.set(field, "patch");
+    if (originalField !== undefined) {
+      let unwrappedField: UnwrappedField;
+      let unwrappedOriginalField: UnwrappedField;
+
+      if (isOptionsField(field)) {
+        unwrappedField = {
+          ...toRaw(field),
+          options: [...field.options.values()],
+        };
+      } else {
+        unwrappedField = toRaw(field);
+      }
+
+      if (isOptionsField(originalField)) {
+        unwrappedOriginalField = {
+          ...toRaw(originalField),
+          options: [...originalField.options.values()],
+        };
+      } else {
+        unwrappedOriginalField = toRaw(originalField);
+      }
+
+      console.log(JSON.stringify(unwrappedField));
+      console.log(JSON.stringify(unwrappedOriginalField));
+
+      if (
+        JSON.stringify(unwrappedField) !==
+        JSON.stringify(unwrappedOriginalField)
+      ) {
+        changedFields.value.set(field, "patch");
+      }
     }
   }
 }
@@ -227,7 +257,9 @@ function prepareFields() {
     const unwrappedChangedField = structuredClone(toRaw(field));
 
     if (isOptionsField(field)) {
-      unwrappedChangedField.options = [...field.options.values()];
+      unwrappedChangedField.options = [
+        ...unwrappedChangedField.options.values(),
+      ];
     }
 
     unwrappedChangedFields.set(unwrappedChangedField, operation);
