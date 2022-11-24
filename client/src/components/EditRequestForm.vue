@@ -2,15 +2,18 @@
 import {
   transformFieldsToMapForRequestForm,
   isOptionsField,
+  isRequestDateField,
+  isRequestTextField,
 } from "@/utils/funtions";
 import type {
+  Request,
   RequestField,
   RequestFields,
   RequestOptionField,
 } from "@/utils/types/form-request";
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 
-const props = defineProps<{ id: string }>();
+const props = defineProps<{ request: Request }>();
 
 const formStructure: Ref<RequestFields> = ref(new Map());
 
@@ -31,6 +34,35 @@ function getFormStructure() {
 }
 
 watchEffect(getFormStructure);
+
+watchEffect(fillForm);
+
+function fillForm() {
+  emptyForm();
+  console.log("fillForm");
+
+  for (const [index, field] of formStructure.value) {
+    const requestField = props.request.fields.get(index);
+
+    if (requestField !== undefined) {
+      if (
+        (isRequestTextField(requestField) ||
+          isRequestDateField(requestField)) &&
+        (isRequestTextField(field) || isRequestDateField(field))
+      ) {
+        field.value = requestField.value;
+      }
+    }
+  }
+}
+
+function emptyForm() {
+  for (const [_index, field] of formStructure.value) {
+    if (isRequestTextField(field) || isRequestDateField(field)) {
+      delete field.value;
+    }
+  }
+}
 
 function setOptionValue(event: Event, option: RequestOptionField) {
   if (!(event.target as HTMLInputElement).checked) {
@@ -81,15 +113,18 @@ function checkFormValidity() {
 }
 
 function prepareFields(fields: RequestFields) {
-  const fieldsPrepared = (
-    structuredClone([...toRaw(fields).values()]) as RequestField[]
-  ).map((field) => {
-    if (isOptionsField(field)) {
-      return { ...field, options: [...field.options.values()] };
-    }
+  const fieldsPrepared = {
+    _id: props.request._id,
+    fields: (
+      structuredClone([...toRaw(fields).values()]) as RequestField[]
+    ).map((field) => {
+      if (isOptionsField(field)) {
+        return { ...field, options: [...field.options.values()] };
+      }
 
-    return field;
-  });
+      return field;
+    }),
+  };
 
   return fieldsPrepared;
 }
@@ -97,10 +132,9 @@ function prepareFields(fields: RequestFields) {
 function submitForm() {
   if (isFormValid.value) {
     const fieldsPrepared = prepareFields(formStructure.value);
-
     console.log(fieldsPrepared);
 
-    // sendObject(fieldsPrepared);
+    sendObject(fieldsPrepared);
   }
 }
 </script>

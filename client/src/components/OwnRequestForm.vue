@@ -10,11 +10,11 @@ import { ref, toRaw, watchEffect, type Ref } from "vue";
 
 const props = defineProps<{ request: Request }>();
 
-const request: Ref<Request> = ref(structuredClone(toRaw(props?.request)));
+const request: Ref<Request> = ref(structuredClone(toRaw(props.request)));
 
 watchEffect(() => {
   console.log(props.request);
-  request.value = structuredClone(toRaw(props?.request));
+  request.value = structuredClone(toRaw(props.request));
 });
 
 const form = ref();
@@ -153,7 +153,7 @@ function submitForm() {
         <br />
       </template>
 
-      <input type="submit" value="Confirm" @click="checkFormValidity()" />
+      <!-- <input type="submit" value="Confirm" @click="checkFormValidity()" /> -->
     </fieldset>
   </form>
 </template>

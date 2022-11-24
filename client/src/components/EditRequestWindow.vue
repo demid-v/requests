@@ -9,6 +9,6 @@ defineProps<{ request: Request | undefined }>();
 <template>
   <div v-if="request">
     <OwnRequestForm :request="request" />
-    <EditRequestForm :id="request._id" />
+    <EditRequestForm :request="request" />
   </div>
 </template>

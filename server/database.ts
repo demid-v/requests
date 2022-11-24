@@ -21,16 +21,13 @@ class RequestsDb {
   }
 
   async getRequests() {
-    const data = await this.collectionRequest.find({});
+    const data = await this.collectionRequest.find();
 
     return data;
   }
 
   async postRequest(obj: any) {
-    const data = await this.collectionRequest.updateOne(
-      { _id: obj._id },
-      { $set: { fields: obj.fields } }
-    );
+    const data = await this.collectionRequest.create(obj);
 
     return data;
   }

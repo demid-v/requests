@@ -17,6 +17,9 @@ import type {
   RawRequestFields,
   RawRequests,
   RawRequestField,
+  RequestDateField,
+  RequestOptionsField,
+  RequestTextField,
 } from "@/utils/types/form-request";
 
 function isTextType(type: FieldType): type is TextType {
@@ -51,6 +54,18 @@ function isRawOptionsField(
   field: RawField | RawRequestField
 ): field is RawOptionsField {
   return isOptionsType(field.type);
+}
+
+function isRequestTextField(field: Field): field is RequestTextField {
+  return isTextField(field);
+}
+
+function isRequestOptionsField(field: Field): field is RequestOptionsField {
+  return isOptionsField(field);
+}
+
+function isRequestDateField(field: Field): field is RequestDateField {
+  return isDateField(field);
 }
 
 const getRandomUuid = () => crypto.randomUUID();
@@ -122,6 +137,9 @@ export {
   isOptionsField,
   isDateField,
   isRawOptionsField,
+  isRequestTextField,
+  isRequestOptionsField,
+  isRequestDateField,
   getRandomUuid,
   transformFieldsToMap,
   transformFieldsToMapForRequestForm,

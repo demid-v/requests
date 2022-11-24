@@ -49,8 +49,8 @@ function sendObject(fieldsPrepared: any) {
   });
 }
 
-function isValid(formObject: RequestFields) {
-  for (const [_id, field] of formObject) {
+function isValid() {
+  for (const [_id, field] of formStructure.value) {
     if ((field.name = field.name.trim()) === "") {
       return false;
     }
@@ -75,30 +75,33 @@ function isValid(formObject: RequestFields) {
 }
 
 function checkFormValidity() {
-  isFormValid.value = isValid(formStructure.value);
+  isFormValid.value = isValid();
 }
 
-function prepareFields(fields: RequestFields) {
-  const fieldsPrepared = (
-    structuredClone([...toRaw(fields).values()]) as RequestField[]
-  ).map((field) => {
-    if (isOptionsField(field)) {
-      return { ...field, options: [...field.options.values()] };
-    }
+function prepareFields() {
+  const fieldsPrepared = {
+    fields: (
+      structuredClone([
+        ...toRaw(formStructure.value).values(),
+      ]) as RequestField[]
+    ).map((field) => {
+      if (isOptionsField(field)) {
+        return { ...field, options: [...field.options.values()] };
+      }
 
-    return field;
-  });
+      return field;
+    }),
+  };
 
   return fieldsPrepared;
 }
 
 function submitForm() {
   if (isFormValid.value) {
-    const fieldsPrepared = prepareFields(formStructure.value);
-
+    const fieldsPrepared = prepareFields();
     console.log(fieldsPrepared);
 
-    // sendObject(fieldsPrepared);
+    sendObject(fieldsPrepared);
   }
 }
 </script>
