@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, toRaw, watch, watchEffect, type Ref } from "vue";
 import Request from "../components/Request.vue";
-import RequestWindow from "../components/RequestWindow.vue";
+import EditRequestWindow from "../components/EditRequestWindow.vue";
+import CreateRequestWindow from "../components/CreateRequestWindow.vue";
 import type { Requests } from "@/utils/types/form-request";
 import { transformRequestsToMap } from "@/utils/funtions";
 import type { KeyOfMap } from "@/utils/types/common";
@@ -10,8 +11,9 @@ const requests: Ref<Requests> = ref(new Map());
 
 watch(requests, () => console.log(toRaw(requests.value)));
 
-const isFormOpen = ref(false);
-const editingRequestId: Ref<KeyOfMap<Requests> | null | undefined> = ref();
+const isEditRequestFormOpen = ref(false);
+const isCreateRequestFormOpen = ref(false);
+const editingRequestId: Ref<KeyOfMap<Requests> | null> = ref(null);
 
 function getRequests() {
   fetch("http://localhost:5501/requests", {
@@ -26,30 +28,21 @@ function getRequests() {
 
 watchEffect(getRequests);
 
-function switchEditing(requestId: KeyOfMap<Requests>) {
-  if (editingRequestId.value == null) {
-    isFormOpen.value = true;
-  } else if (requestId === editingRequestId.value) {
-    isFormOpen.value = !isFormOpen.value;
+function switchEditing(requestId: string) {
+  isCreateRequestFormOpen.value = false;
+
+  if (requestId === editingRequestId.value) {
+    isEditRequestFormOpen.value = !isEditRequestFormOpen.value;
   } else {
-    isFormOpen.value = true;
+    isEditRequestFormOpen.value = true;
   }
 
   editingRequestId.value = requestId;
 }
 
 function openForm() {
-  if (editingRequestId.value == null || !isFormOpen.value) {
-    if (isFormOpen.value) {
-      isFormOpen.value = false;
-    } else {
-      isFormOpen.value = true;
-    }
-  }
-
-  if (editingRequestId.value != null) {
-    editingRequestId.value = null;
-  }
+  isEditRequestFormOpen.value = false;
+  isCreateRequestFormOpen.value = !isCreateRequestFormOpen.value;
 }
 </script>
 
@@ -67,12 +60,12 @@ function openForm() {
 
       <button @click="openForm()">New request</button>
 
-      <RequestWindow
-        v-show="isFormOpen"
-        :request="
-          editingRequestId != null ? requests.get(editingRequestId) : undefined
-        "
+      <EditRequestWindow
+        v-show="isEditRequestFormOpen"
+        :request="requests.get(editingRequestId || '')"
       />
+
+      <CreateRequestWindow v-show="isCreateRequestFormOpen" />
     </div>
   </main>
 </template>

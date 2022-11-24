@@ -387,5 +387,3 @@ function sendChangedFields(unwrappedChangedFields: UnwrappedChangedFields) {
     </fieldset>
   </form>
 </template>
-
-<style scoped></style>

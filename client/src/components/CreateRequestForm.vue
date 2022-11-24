@@ -106,7 +106,7 @@ function submitForm() {
 <template>
   <form ref="form" @submit.prevent="submitForm()">
     <fieldset>
-      <legend>Latest version of the form</legend>
+      <legend>New request</legend>
 
       <template v-for="[id, field] in formStructure">
         <label :for="id">{{ field.name }}</label

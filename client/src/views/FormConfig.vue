@@ -8,5 +8,3 @@ import FormConfig from "../components/FormConfig.vue";
     <FormConfig />
   </div>
 </template>
-
-<style></style>

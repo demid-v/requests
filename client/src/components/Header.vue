@@ -16,5 +16,3 @@ import { RouterLink } from "vue-router";
     </nav>
   </header>
 </template>
-
-<style scoped></style>
